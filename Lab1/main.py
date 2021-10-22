@@ -6,7 +6,8 @@ Reiter, Aleksander <https://github.com/block439>
 Dziadowiec, Mieszko <https://github.com/mieshki>
 
 How to run:
-'python main.py'
+(optional): `pip install -r requirements.txt`
+`python main.py`
 """
 
 from easyAI import TwoPlayerGame, Human_Player, AI_Player, Negamax
