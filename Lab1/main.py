@@ -1,116 +1,90 @@
-#from curses.ascii import isupper
+"""
+    Zmierz się ze sztuczną intelignecją w szachach :)
+    Zasady gry w szachy: https://pl.wikipedia.org/wiki/Zasady_gry_w_szachy
+    W celu dokonania ruchu użyj notacji algebraicznej wpisując do konsoli swój ruch.
+    Na przykład: ruch pionkiem z pola a2 na pole a3 będzie wyglądać następująco a2a3.
 
-from easyAI import TwoPlayerGame, Human_Player, AI_Player, Negamax
+    W celu możliwości uruchomienia gry należy pobrać i zainstalować bibliotekę easyAi i chess.
+    W konsoli użyj komendy 'pip install -r /path/to/requirements.txt' pozwoli na automatyczną instalację potrzebnych bibliotek
+
+    Autorzy: Mieszko Dziadowiec, Aleksander Reiter
+"""
+from easyAI import TwoPlayerGame, AI_Player, Human_Player, Negamax
 import chess
-import chess.engine
-import time
 
-BOARD_WIDTH = 8
-BOARD_HEIGHT = 8
-
-class ChessGame(TwoPlayerGame):
+class Chess(TwoPlayerGame):
 
     def __init__(self, players=None):
-        self.board = chess.Board()
         self.players = players
-        self.score = 53
-        self.current_player = 2
-        self.scores = [0, 0]
-        self.score_to_decrement = 0
-        self.last_move = None
-        self.beated_piece = None
-        self.start_time = time.time()
+        self.board = chess.Board()
+        self.moves = 0
+        self.current_player = 1  # player 1 starts
 
     def possible_moves(self):
-        moves = list(self.board.legal_moves)
-        return moves
+        # pobieramy listę możliwych ruchów dla danego użytkownika
+        self.moves = list(self.board.legal_moves)
+        return self.moves
 
     def make_move(self, move):
-        self.board.push_san(str(move))
+        self.board.push(move)
 
-    def win(self):
-        return self.board.is_variant_win()
+    def unmake_move(self, move):
+        # usuwamy ostatni ruch ze stosu
+        self.board.pop()
 
     def is_over(self):
-        return self.board.is_game_over()
-
-    def show(self):
-        print(f'Time of execution: {time.time() - self.start_time} seconds')
-        print(self.board)
-        outcome = self.board.outcome()
-        if outcome is not None:
-            print(f'Termination: {outcome.termination.name}, result: {outcome.result()}')
-        self.start_time = time.time()
-        #print(self.board.unicode(borders=True, empty_square='- '))
+        return self.board.is_game_over(claim_draw=True)
 
     def scoring(self):
-        total_score = 0
         score = 0
-        white_score = 0
-        black_score = 0
-        #print(self.current_player)
-        for c in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
-            for i in range(1, 9):
-                current_piece = self.board.piece_at(chess.parse_square(f'{c}{i}'))
-                if current_piece is not None:
-                    piece_type = current_piece.piece_type
-                    # [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING]
-                    if piece_type == 1:  # PAWN
-                        score = 10
-                    elif piece_type == 2:  # KNIGHT
-                        score = 30
-                    elif piece_type == 3:  # BISHOP
-                        score = 30
-                    elif piece_type == 4:  # ROOK
-                        score = 50
-                    elif piece_type == 5:  # QUEEN
-                        score = 90
-                    elif piece_type == 6:  # KING
-                        score = 1000
-
-                #current_player = 1 - white
-                #current_player = 2 - black
-
-                if str(current_piece).isupper():
-                    # White
-                    white_score += score
-                    if self.current_player == 1:
-                        # White playing
-                        total_score += score
-                    else:
-                        # Black playing
-                        total_score -= score
-                else:
-                    # Black
-                    black_score += score
-                    if self.current_player == 2:
-                        # Black playing
-                        total_score += score
-                    else:
-                        # White playing
-                        total_score -= score
-
-        #is_check_or_check_mate = self.board.is_check() or self.board.is_checkmate()
-        if self.board.is_check():
-            total_score += 100
-        elif self.board.is_checkmate():
-            total_score += 10000
-
-        if self.board.is_seventyfive_moves() or self.board.is_fivefold_repetition():
-            total_score -= 1000
-
+        for move in self.possible_moves():
+            try:
+                opponent_piece = self.board.piece_at(chess.parse_square(str(move)[:-2]))
+            except:
+                opponent_piece = None
+            # Przypisanie punktów za bicie pionków
+            if opponent_piece is not None:
+                if opponent_piece.piece_type == 1:
+                    score += 10
+                elif opponent_piece.piece_type == 2:
+                    score += 30
+                elif opponent_piece.piece_type == 3:
+                    score += 30
+                elif opponent_piece.piece_type == 4:
+                    score += 50
+                elif opponent_piece.piece_type == 5:
+                    score += 90
+                elif opponent_piece.piece_type == 6:
+                    score += 40
+            # premiujemy ruch dający szacha
+            if self.board.gives_check(move):
+                return 2000
+        # punktami karnymi zmuszamy AI do nie powtarzania się
         if self.board.is_repetition(2):
-            total_score -= 90
-
+            score -= 150
+        # punkty karne za dążenie do przegranej
         if self.board.is_stalemate():
-            total_score -= 300
+            score -= 1000
+        if self.board.is_check():
+            score -= 500
+        if self.board.is_checkmate():
+            score -= 2000
+        if self.board.can_claim_fifty_moves() or self.board.can_claim_threefold_repetition():
+            score -= 500
+        return score
 
-        return total_score
+    def show(self):
+        print(self.board)
+        outcome = self.board.outcome(claim_draw=True)
+        if outcome is not None:
+            winner = "WHITE" if outcome.winner is True else "BLACK"
+            print(outcome.termination.name, winner, outcome.result())
 
-# Start a match (and store the history of moves when it ends)
-depth = 4
-ai = Negamax(depth) # The AI will think 13 moves in advance
-#ai2 = Negamax(depth) # The AI will think 13 moves in advance
-#game = ChessGame( [ AI_Player(ai), Human_Player() ] )
-game = ChessGame([AI_Player(ai), AI_Player(ai)])
-history = game.play()
+
+if __name__ == "__main__":
+    print(__doc__)
+    ai = Negamax(3, win_score=2000)
+
+    # game = CHess([AI_Player(ai), Human_Player()])
+    game = Chess([AI_Player(ai), AI_Player(ai)])
+    game.play()
