@@ -1,32 +1,37 @@
-#from curses.ascii import isupper
+"""
+Chess rules [PL]: https://www.ikonka.com.pl/kontext/file/2236/KX8940.pdf
+
+Authors:
+Reiter, Aleksander <https://github.com/block439>
+Dziadowiec, Mieszko <https://github.com/mieshki>
+
+How to run:
+'python main.py'
+"""
 
 from easyAI import TwoPlayerGame, Human_Player, AI_Player, Negamax
 import chess
 import chess.engine
 import time
 
-BOARD_WIDTH = 8
-BOARD_HEIGHT = 8
+PATH_TO_ENGINE = chess.engine.SimpleEngine.popen_uci('.\\chess_engine\\stockfish.exe')
+
 
 class ChessGame(TwoPlayerGame):
-
     def __init__(self, players=None):
         self.board = chess.Board()
         self.players = players
-        self.score = 53
-        self.current_player = 2
-        self.scores = [0, 0]
-        self.score_to_decrement = 0
-        self.last_move = None
-        self.beated_piece = None
+        self.current_player = 1
         self.start_time = time.time()
 
     def possible_moves(self):
-        moves = list(self.board.legal_moves)
-        return moves
+        return list(self.board.legal_moves)
 
     def make_move(self, move):
-        self.board.push_san(str(move))
+        self.board.push(move)
+
+    def unmake_move(self, move):
+        self.board.pop()
 
     def win(self):
         return self.board.is_variant_win()
@@ -34,83 +39,66 @@ class ChessGame(TwoPlayerGame):
     def is_over(self):
         return self.board.is_game_over()
 
-    def show(self):
-        print(f'Time of execution: {time.time() - self.start_time} seconds')
-        print(self.board)
+    def print_termination_reason_if_end(self):
         outcome = self.board.outcome()
         if outcome is not None:
             print(f'Termination: {outcome.termination.name}, result: {outcome.result()}')
+
+    def get_analysis_from_engine(self):
+        info = PATH_TO_ENGINE.analyse(self.board, chess.engine.Limit(depth=10))
+        return info
+
+    def print_current_score(self):
+        info = self.get_analysis_from_engine()
+        print("Score:", info["score"])
+
+    def print_possible_moves(self):
+        moves = list(self.board.legal_moves)
+        print(moves)
+
+    def print_last_move_execution_time(self):
+        print(f'Time of execution: {time.time() - self.start_time} seconds')
+        # reset start_time to current time
         self.start_time = time.time()
-        #print(self.board.unicode(borders=True, empty_square='- '))
+
+    def show(self):
+        self.print_last_move_execution_time()
+
+        print(self.board)
+
+        self.print_termination_reason_if_end()
+        self.print_current_score()
+        self.print_possible_moves()
 
     def scoring(self):
-        total_score = 0
-        score = 0
-        white_score = 0
-        black_score = 0
-        #print(self.current_player)
-        for c in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
-            for i in range(1, 9):
-                current_piece = self.board.piece_at(chess.parse_square(f'{c}{i}'))
-                if current_piece is not None:
-                    piece_type = current_piece.piece_type
-                    # [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING]
-                    if piece_type == 1:  # PAWN
-                        score = 10
-                    elif piece_type == 2:  # KNIGHT
-                        score = 30
-                    elif piece_type == 3:  # BISHOP
-                        score = 30
-                    elif piece_type == 4:  # ROOK
-                        score = 50
-                    elif piece_type == 5:  # QUEEN
-                        score = 90
-                    elif piece_type == 6:  # KING
-                        score = 1000
+        if self.board.is_checkmate():
+            """
+            That means current player is being checkmated
+            not that current player can check mate an opponent
+            """
+            return -100000
 
-                #current_player = 1 - white
-                #current_player = 2 - black
+        info = self.get_analysis_from_engine()
 
-                if str(current_piece).isupper():
-                    # White
-                    white_score += score
-                    if self.current_player == 1:
-                        # White playing
-                        total_score += score
-                    else:
-                        # Black playing
-                        total_score -= score
-                else:
-                    # Black
-                    black_score += score
-                    if self.current_player == 2:
-                        # Black playing
-                        total_score += score
-                    else:
-                        # White playing
-                        total_score -= score
+        try:
+            """
+            Example output from engine:
+            PovScore(Cp(+32), WHITE)
+            Means that WHITE in this situation is in a little better position
+            """
+            return info["score"].relative.cp
 
-        #is_check_or_check_mate = self.board.is_check() or self.board.is_checkmate()
-        if self.board.is_check():
-            total_score += 100
-        elif self.board.is_checkmate():
-            total_score += 10000
+        except:
+            """
+            Example: PovScore(Mate(+2), WHITE)
+            Means that WHITE can check mate opponent in 2 moves
+            Give more score when check mate is available in less moves
+            """
+            return 20000 - 2000 * info["score"].relative.moves
 
-        if self.board.is_seventyfive_moves() or self.board.is_fivefold_repetition():
-            total_score -= 1000
-
-        if self.board.is_repetition(2):
-            total_score -= 90
-
-        if self.board.is_stalemate():
-            total_score -= 300
-
-        return total_score
 
 # Start a match (and store the history of moves when it ends)
-depth = 4
-ai = Negamax(depth) # The AI will think 13 moves in advance
-#ai2 = Negamax(depth) # The AI will think 13 moves in advance
-#game = ChessGame( [ AI_Player(ai), Human_Player() ] )
-game = ChessGame([AI_Player(ai), AI_Player(ai)])
+ai = Negamax(1, win_score=20000)
+#game = ChessGame( [ Human_Player(), AI_Player(ai) ] )
+game = ChessGame( [ AI_Player(ai), AI_Player(ai) ] )
 history = game.play()
