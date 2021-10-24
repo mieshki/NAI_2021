@@ -34,8 +34,13 @@ function InfoDisplay(width, height) {
 		
 		messages = this.messages = makeInfoBox("TEST", CENTRE, 300) ;
 		messages.domElement.className = "titleBox";
-		  
-	this.arrangeBoxes = arrangeBoxes; 
+
+		alt.domElement.id = "Altitude";
+		horizSpeed.domElement.id = "HorizSpeed";
+		vertSpeed.domElement.id = "VertSpeed";
+		currentAngle.domElement.id = "Angle";
+
+	this.arrangeBoxes = arrangeBoxes;
 	
 	
 	arrangeBoxes(w,h); 
