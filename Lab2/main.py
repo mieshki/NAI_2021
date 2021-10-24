@@ -63,7 +63,7 @@ def changeDirection(step, sign):
 if __name__ == '__main__':
 
     driver = Firefox()
-    web_path = "file:///D:/Python/GameAI/NAI_2021/Lab2/moonlander/index.html"
+    web_path = "file:///D:/Python/GameAI/NAI_2021/Lab2/moonlander-simple-v1/index.html"
     driver.get(web_path)
 
     game_launch()
@@ -73,7 +73,7 @@ if __name__ == '__main__':
         altitude ,horizSpeed ,vertSpeed ,angle = getInfo(driver)
         sign = abs(int(horizSpeed)) == int(horizSpeed)
         horizSpeed = abs(int(horizSpeed))
-        if 15 > int(horizSpeed):
+        """if 15 > int(horizSpeed):
             changeDirection(0.3, sign)
             throttle(1)
         elif 30 > int(horizSpeed):
@@ -81,8 +81,10 @@ if __name__ == '__main__':
             throttle(2)
         elif int(horizSpeed) > 40:
             throttle(3)
-        time.sleep(1)
-        if 20 > int(vertSpeed):
+        time.sleep(1)"""
+        if 10 > int(vertSpeed):
+            time.sleep(4)
+        elif 20 > int(vertSpeed):
             throttle(2)
         elif int(vertSpeed) > 40:
             throttle(3)
