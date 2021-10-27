@@ -1,16 +1,15 @@
 """
-Dowload firefox driver form https://github.com/mozilla/geckodriver/releases
+Download firefox driver form https://github.com/mozilla/geckodriver/releases
 Full Install instruction on https://www.selenium.dev/documentation/getting_started/installing_browser_drivers/
 """
 
-import os
 import time
-
+import pathlib
 import pyautogui
-#import requests
-from bs4 import BeautifulSoup
 from selenium.webdriver import Firefox
+from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
+
 
 def getInfo(driver):
     """getInfo() gives information about our ship position in space
@@ -62,42 +61,19 @@ def changeDirection(step, sign):
 
 if __name__ == '__main__':
 
-    driver = Firefox()
-    web_path = "file:///D:/Python/GameAI/NAI_2021/Lab2/moonlander-simple-v1/index.html"
+    driver = Chrome()
+    web_path = f'{pathlib.Path().resolve()}\moonlander-simple-v1\index.html'
+    print(web_path)
     driver.get(web_path)
 
     game_launch()
-
-    #for _ in range(5):
+    time.sleep(2)
     while(True):
         altitude ,horizSpeed ,vertSpeed ,angle = getInfo(driver)
-        sign = abs(int(horizSpeed)) == int(horizSpeed)
-        horizSpeed = abs(int(horizSpeed))
-        """if 15 > int(horizSpeed):
-            changeDirection(0.3, sign)
-            throttle(1)
-        elif 30 > int(horizSpeed):
-            changeDirection(0.3, sign)
-            throttle(2)
-        elif int(horizSpeed) > 40:
-            throttle(3)
-        time.sleep(1)"""
-        if 10 > int(vertSpeed):
-            time.sleep(4)
-        elif 20 > int(vertSpeed):
-            throttle(2)
-        elif int(vertSpeed) > 40:
-            throttle(3)
-"""print("alt" + altitude)
-        print("horiz" + horizSpeed)
-        print("vert" + vertSpeed)
-        print("angle" + angle)"""
-
-
-    #driver.quit()
-
-"""    with pyautogui.hold('shift'):  # Press the Shift key down and hold it.
-        pyautogui.press(['left', 'left', 'left', 'left'])  # Press the left arrow key 4 times.
-    pyautogui.press("up")
-    print(f'w= {X} H={Y}')
-"""
+        try:
+            if int(altitude) <= (int(vertSpeed) + 36):
+                print(f'true - {altitude} <= {vertSpeed}')
+                throttle(8)
+                time.sleep(5)
+        except:
+            pass
