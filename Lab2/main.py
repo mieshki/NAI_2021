@@ -10,6 +10,7 @@ from selenium.webdriver import Firefox
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 
+from fuzzy_logic import *
 
 def getInfo(driver):
     """getInfo() gives information about our ship position in space
@@ -68,7 +69,18 @@ if __name__ == '__main__':
 
     game_launch()
     time.sleep(2)
+    counter = 0
     while(True):
+        altitude, horizSpeed, vertSpeed, angle = getInfo(driver)
+        #start_time = time.time()
+        output = fuzzy_benchmark(int(altitude), int(vertSpeed)) / 100
+        # 0 - 25 /10 2.5 / 10 0.25
+        # * 10 - milisecs
+        throttle(output)
+            #time.sleep(0.20 - (output / 100))
+        #print(f'--- {time.time() - start_time} seconds, no.{counter} ---')
+        #counter += 1
+        """
         altitude ,horizSpeed ,vertSpeed ,angle = getInfo(driver)
         try:
             if int(altitude) <= (int(vertSpeed) + 36):
@@ -77,3 +89,4 @@ if __name__ == '__main__':
                 time.sleep(5)
         except:
             pass
+        """
