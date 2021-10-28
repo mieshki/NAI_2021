@@ -70,30 +70,35 @@ if __name__ == '__main__':
     game_launch()
     time.sleep(2)
     play = True
-    while(play):
-        altitude, horizontal_speed, velocity, angle = get_info(driver)
+    while play:
+        altitude, horizontal_velocity, vertical_velocity, angle = get_info(driver)
 
+        # output -100 - 100
+        output = fuzzy_benchmark(altitude, vertical_velocity) / 100
+        if output < 0:
+            pass
+        else:
+            throttle((output * 0.1) * 2)
+
+"""
         altitude_sqrt = math.sqrt(altitude)
 
-        """
-        Some examples:
-            - 0.10 and 5 - crash
-            - 0.13 and 5 - 919 very hard landing
-            - 0.15 and 5 - 906
-            - 0.20 and 5 - 879
-        """
+        # Some examples:
+        #    - 0.10 and 5 - crash
+        #    - 0.13 and 5 - 919 very hard landing
+        #    - 0.15 and 5 - 906
+        #    - 0.20 and 5 - 879
         # the lower the more aggressive and fuel saving
         AGGRESSIVENESS_LEVEL = 0.14
         CUTOFF_THRESHOLD = 5
 
-        print(f'altitude_sqrt={altitude_sqrt}, velocity={velocity}')
+        print(f'altitude_sqrt={altitude_sqrt}, velocity={vertical_velocity}')
         if altitude < CUTOFF_THRESHOLD:
             print('Landed')
             play = False
-        elif altitude_sqrt < int(velocity * AGGRESSIVENESS_LEVEL) and velocity > CUTOFF_THRESHOLD:
+        elif altitude_sqrt < int(vertical_velocity * AGGRESSIVENESS_LEVEL) and vertical_velocity > CUTOFF_THRESHOLD:
             print('throttle for 1s')
             throttle(1)
         else:
             pass
-        ###output = fuzzy_benchmark(int(altitude), int(vertSpeed)) / 100
-        ###throttle(output)
+"""

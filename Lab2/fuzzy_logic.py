@@ -49,35 +49,45 @@ import matplotlib.pyplot as plt
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
+from skfuzzy_helper import *
+
 
 def fuzzy_benchmark(_altitude, speed):
-    altitude = ctrl.Antecedent(np.arange(0, 420, 1), 'altitude')
-    velocity = ctrl.Antecedent(np.arange(0, 100, 1), 'velocity')
-    throttle = ctrl.Consequent(np.arange(0, 1001, 1), 'throttle')
+    altitude = ctrl.Antecedent(np.arange(0, 400, 1), 'altitude')
+    velocity = ctrl.Antecedent(np.arange(-100, 100, 1), 'velocity')
+    throttle = ctrl.Consequent(np.arange(-100, 100, 1), 'throttle')
 
-    altitude.automf(3, 'quant')
-    velocity.automf(3, 'quant')
+    # Altitude membership functions
+    altitude['NEAR_ZERO'] = trimf(altitude.universe, [0, 0, 200])
+    altitude['SMALL'] = trimf(altitude.universe, [-66, 116, 300])
+    altitude['MEDIUM'] = trimf(altitude.universe, [116, 316, 466])
+    altitude['LARGE'] = trimf(altitude.universe, [200, 400, 400])
 
-    throttle['low'] = fuzz.trimf(throttle.universe, [1, 1, 10])
-    # throttle['medium'] = fuzz.trimf(throttle.universe, [0, 13, 25])
-    throttle['high'] = fuzz.trimf(throttle.universe, [500, 800, 1000])
+    # Velocity membership functions
+    velocity['UP_LARGE'] = trapmf(velocity.universe, [-100, -100, -66, -33])
+    velocity['UP_SMALL'] = trimf(velocity.universe, [-66, -33, 0])
+    velocity['ZERO'] = trimf(velocity.universe, [-33, 0, 33])
+    velocity['DOWN_SMALL'] = trimf(velocity.universe, [0, 33, 66])
+    velocity['DOWN_LARGE'] = trapmf(velocity.universe, [33, 66, 100, 100])
 
-    # altitude: low, average, high
-    # velocity: low, average, high
-    # throttle: low, medium, high
-    rule1 = ctrl.Rule(altitude['high'] | velocity['low'], throttle['low'])
-    # rule2 = ctrl.Rule(altitude['average'] | velocity['average'], throttle['medium'])
-    rule3 = ctrl.Rule(altitude['low'] & velocity['high'], throttle['high'])
+    # Force membership functions
+    throttle['DOWN_LARGE'] = trapmf(throttle.universe, [-100, -100, -66, -33])
+    throttle['DOWN_SMALL'] = trimf(throttle.universe, [-66, -33, 0])
+    throttle['ZERO'] = trimf(throttle.universe, [-33, 0, 33])
+    throttle['UP_SMALL'] = trimf(throttle.universe, [0, 33, 66])
+    throttle['UP_LARGE'] = trapmf(throttle.universe, [33, 66, 100, 100])
 
-    #rule2 = ctrl.Rule(velocity['low'] & velocity['average'], throttle['medium'])
-    #rule3 = ctrl.Rule(velocity['average'] & velocity['high'], throttle['high'])
+    #altitude.view()
+    #velocity.view()
+    #throttle.view()
 
-    #rule4 = ctrl.Rule(altitude['average'] & altitude['high'], throttle['low'])
-    #rule5 = ctrl.Rule(altitude['low'], throttle['medium'], throttle['medium'])
-    #rule6 = ctrl.Rule(altitude['lowest'] | altitude['lower'], throttle['high'])
+    rule1 = ctrl.Rule(altitude['LARGE'], throttle['ZERO'])
+    rule2 = ctrl.Rule(altitude['MEDIUM'] & velocity['UP_SMALL'], throttle['UP_SMALL'])
+    rule3 = ctrl.Rule(altitude['SMALL'] & velocity['DOWN_SMALL'], throttle['UP_LARGE'])
+    rule4 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['DOWN_SMALL'], throttle['ZERO'])
+    rule5 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['ZERO'], throttle['DOWN_SMALL'] )
 
-    #throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6])
-    throttling_ctrl = ctrl.ControlSystem([rule1, rule3])
+    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5])
 
     throttling = ctrl.ControlSystemSimulation(throttling_ctrl)
 
