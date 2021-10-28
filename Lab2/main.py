@@ -2,7 +2,7 @@
 Download firefox driver form https://github.com/mozilla/geckodriver/releases
 Full Install instruction on https://www.selenium.dev/documentation/getting_started/installing_browser_drivers/
 """
-
+import math
 import time
 import pathlib
 import pyautogui
@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 
 from fuzzy_logic import *
 
-def getInfo(driver):
+def get_info(driver):
     """getInfo() gives information about our ship position in space
     :param driver: current session with loaded webpage
     :return: Four variables describing speed, angle and Altitude of our ship
@@ -21,7 +21,7 @@ def getInfo(driver):
     horizSpeed = driver.find_elements(By.ID, 'HorizSpeed').pop().text
     vertSpeed = driver.find_elements(By.ID, 'VertSpeed').pop().text
     angle = driver.find_elements(By.ID, 'Angle').pop().text
-    return altitude, horizSpeed, vertSpeed, angle
+    return int(altitude), int(horizSpeed), int(vertSpeed), int(angle)
 
 def game_launch():
     """
@@ -69,24 +69,31 @@ if __name__ == '__main__':
 
     game_launch()
     time.sleep(2)
-    counter = 0
-    while(True):
-        altitude, horizSpeed, vertSpeed, angle = getInfo(driver)
-        #start_time = time.time()
-        output = fuzzy_benchmark(int(altitude), int(vertSpeed)) / 100
-        # 0 - 25 /10 2.5 / 10 0.25
-        # * 10 - milisecs
-        throttle(output)
-            #time.sleep(0.20 - (output / 100))
-        #print(f'--- {time.time() - start_time} seconds, no.{counter} ---')
-        #counter += 1
+    play = True
+    while(play):
+        altitude, horizontal_speed, velocity, angle = get_info(driver)
+
+        altitude_sqrt = math.sqrt(altitude)
+
         """
-        altitude ,horizSpeed ,vertSpeed ,angle = getInfo(driver)
-        try:
-            if int(altitude) <= (int(vertSpeed) + 36):
-                print(f'true - {altitude} <= {vertSpeed}')
-                throttle(8)
-                time.sleep(5)
-        except:
+        Some examples:
+            - 0.10 and 5 - crash
+            - 0.13 and 5 - 919 very hard landing
+            - 0.15 and 5 - 906
+            - 0.20 and 5 - 879
+        """
+        # the lower the more aggressive and fuel saving
+        AGGRESSIVENESS_LEVEL = 0.14
+        CUTOFF_THRESHOLD = 5
+
+        print(f'altitude_sqrt={altitude_sqrt}, velocity={velocity}')
+        if altitude < CUTOFF_THRESHOLD:
+            print('Landed')
+            play = False
+        elif altitude_sqrt < int(velocity * AGGRESSIVENESS_LEVEL) and velocity > CUTOFF_THRESHOLD:
+            print('throttle for 1s')
+            throttle(1)
+        else:
             pass
-        """
+        ###output = fuzzy_benchmark(int(altitude), int(vertSpeed)) / 100
+        ###throttle(output)

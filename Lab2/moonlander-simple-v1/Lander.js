@@ -121,6 +121,7 @@ Lander = function() {
 			if(thrustBuild>0) { 
 				thrustVec.reset(0,-thrustAcceleration*thrustBuild); 
 				thrustVec.rotate(this.rotation); 
+				console.log(thrustVec)
 				vel.plusEq(thrustVec); 
 				this.fuel -= (0.2 * thrustBuild);
 			}
