@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def trimf(x, abc):
     """
     Triangular membership function generator.
