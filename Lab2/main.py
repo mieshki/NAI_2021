@@ -60,8 +60,19 @@ def changeDirection(step, sign):
     pyautogui.keyUp(direction)
 
 
-if __name__ == '__main__':
+def translate(value, leftMin, leftMax, rightMin, rightMax):
+    # Figure out how 'wide' each range is
+    leftSpan = leftMax - leftMin
+    rightSpan = rightMax - rightMin
 
+    # Convert the left range into a 0-1 range (float)
+    valueScaled = float(value - leftMin) / float(leftSpan)
+
+    # Convert the 0-1 range into a value in the right range.
+    return rightMin + (valueScaled * rightSpan)
+
+
+if __name__ == '__main__':
     driver = Chrome()
     web_path = f'{pathlib.Path().resolve()}\moonlander-simple-v1\index.html'
     print(web_path)
@@ -74,11 +85,14 @@ if __name__ == '__main__':
         altitude, horizontal_velocity, vertical_velocity, angle = get_info(driver)
 
         # output -100 - 100
-        output = fuzzy_benchmark(altitude, vertical_velocity) / 100
-        if output < 0:
+        output = fuzzy_benchmark(altitude, vertical_velocity)
+        _throttle = translate(output, 1, 101, 0, 3)
+        # 1 - 10ms
+        if output < 1:
             pass
         else:
-            throttle((output * 0.1) * 2)
+            print(f'throttle for={_throttle}')
+            throttle(_throttle)
 
 """
         altitude_sqrt = math.sqrt(altitude)

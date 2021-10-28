@@ -81,11 +81,11 @@ def fuzzy_benchmark(_altitude, speed):
     #velocity.view()
     #throttle.view()
 
-    rule1 = ctrl.Rule(altitude['LARGE'], throttle['ZERO'])
-    rule2 = ctrl.Rule(altitude['MEDIUM'] & velocity['UP_SMALL'], throttle['UP_SMALL'])
-    rule3 = ctrl.Rule(altitude['SMALL'] & velocity['DOWN_SMALL'], throttle['UP_LARGE'])
-    rule4 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['DOWN_SMALL'], throttle['ZERO'])
-    rule5 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['ZERO'], throttle['DOWN_SMALL'] )
+    rule1 = ctrl.Rule(~altitude['NEAR_ZERO'], throttle['DOWN_LARGE'])
+    rule2 = ctrl.Rule(altitude['SMALL'] | velocity['DOWN_LARGE'], throttle['UP_LARGE'])
+    rule3 = ctrl.Rule(altitude['NEAR_ZERO'] & ~velocity['ZERO'], throttle['UP_SMALL'])
+    rule4 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['ZERO'], throttle['ZERO'])
+    rule5 = ctrl.Rule(altitude['NEAR_ZERO'] & (velocity['ZERO'] | velocity['DOWN_SMALL']), throttle['DOWN_SMALL'])
 
     throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5])
 
@@ -97,11 +97,11 @@ def fuzzy_benchmark(_altitude, speed):
     throttling.input['velocity'] = speed
 
     # Crunch the numbers
-    throttling.compute()
     print(f'altitude={_altitude}, speed={speed}')
+    throttling.compute()
     output = throttling.output['throttle']
     print(output)
-    return output
+    return int(output)
 
 def fuzzy_test():
     altitude = ctrl.Antecedent(np.arange(0, 11, 1), 'altitude')
