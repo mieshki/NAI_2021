@@ -81,18 +81,18 @@ if __name__ == '__main__':
     game_launch()
     time.sleep(2)
     play = True
+
     while play:
         altitude, horizontal_velocity, vertical_velocity, angle = get_info(driver)
 
-        # output -100 - 100
+        # output <-100, 100>
         output = fuzzy_benchmark(altitude, vertical_velocity)
-        _throttle = translate(output, 1, 101, 0, 3)
-        # 1 - 10ms
-        if output < 1:
+        throttle_time_in_seconds = translate(output, 1, 101, 0, 3)
+        if output < 5:
             pass
         else:
-            print(f'throttle for={_throttle}')
-            throttle(_throttle)
+            print(f'throttle for={throttle_time_in_seconds}')
+            throttle(throttle_time_in_seconds)
 
 """
         altitude_sqrt = math.sqrt(altitude)

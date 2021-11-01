@@ -81,18 +81,35 @@ def fuzzy_benchmark(_altitude, speed):
     #velocity.view()
     #throttle.view()
 
-    rule1 = ctrl.Rule(~altitude['NEAR_ZERO'], throttle['DOWN_LARGE'])
-    rule2 = ctrl.Rule(altitude['SMALL'] | velocity['DOWN_LARGE'], throttle['UP_LARGE'])
-    rule3 = ctrl.Rule(altitude['NEAR_ZERO'] & ~velocity['ZERO'], throttle['UP_SMALL'])
-    rule4 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['ZERO'], throttle['ZERO'])
-    rule5 = ctrl.Rule(altitude['NEAR_ZERO'] & (velocity['ZERO'] | velocity['DOWN_SMALL']), throttle['DOWN_SMALL'])
+    rule1 = ctrl.Rule(altitude['LARGE'] & velocity['DOWN_LARGE'], throttle['ZERO'])
+    rule2 = ctrl.Rule(altitude['LARGE'] & velocity['DOWN_SMALL'], throttle['DOWN_LARGE'])
+    rule3 = ctrl.Rule(altitude['LARGE'] & velocity['ZERO'], throttle['DOWN_LARGE'])
+    rule4 = ctrl.Rule(altitude['LARGE'] & velocity['UP_SMALL'], throttle['DOWN_LARGE'])
+    rule5 = ctrl.Rule(altitude['LARGE'] & velocity['UP_LARGE'], throttle['DOWN_LARGE'])
 
-    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5])
+    rule6 = ctrl.Rule(altitude['MEDIUM'] & velocity['DOWN_LARGE'], throttle['UP_SMALL'])
+    rule7 = ctrl.Rule(altitude['MEDIUM'] & velocity['DOWN_SMALL'], throttle['ZERO'])
+    rule8 = ctrl.Rule(altitude['MEDIUM'] & velocity['ZERO'], throttle['DOWN_SMALL'])
+    rule9 = ctrl.Rule(altitude['MEDIUM'] & velocity['UP_SMALL'], throttle['DOWN_LARGE'])
+    rule10 = ctrl.Rule(altitude['MEDIUM'] & velocity['UP_LARGE'], throttle['DOWN_LARGE'])
+
+    rule11 = ctrl.Rule(altitude['SMALL'] & velocity['DOWN_LARGE'], throttle['UP_SMALL'])
+    rule12 = ctrl.Rule(altitude['SMALL'] & velocity['DOWN_SMALL'], throttle['DOWN_SMALL'])
+    rule13 = ctrl.Rule(altitude['SMALL'] | velocity['ZERO'], throttle['DOWN_SMALL'])
+    rule14 = ctrl.Rule(altitude['SMALL'] & velocity['ZERO'], throttle['DOWN_LARGE'])
+    rule15 = ctrl.Rule(altitude['SMALL'] | velocity['UP_SMALL'], throttle['DOWN_SMALL'])
+    rule16 = ctrl.Rule(altitude['SMALL'] & velocity['UP_LARGE'], throttle['DOWN_LARGE'])
+
+    rule17 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['DOWN_LARGE'], throttle['UP_LARGE'])
+    rule18 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['DOWN_SMALL'], throttle['UP_LARGE'])
+    rule19 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['ZERO'], throttle['DOWN_SMALL'])
+    rule20 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['UP_SMALL'], throttle['DOWN_SMALL'])
+    rule21 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['UP_LARGE'], throttle['DOWN_SMALL'])
+
+    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9, rule10, rule11, rule12, rule13, rule14, rule15, rule16, rule17, rule18, rule19, rule20, rule21])
 
     throttling = ctrl.ControlSystemSimulation(throttling_ctrl)
 
-    # Pass inputs to the ControlSystem using Antecedent labels with Pythonic API
-    # Note: if you like passing many inputs all at once, use .inputs(dict_of_data)
     throttling.input['altitude'] = _altitude
     throttling.input['velocity'] = speed
 
