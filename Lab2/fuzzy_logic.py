@@ -52,8 +52,9 @@ from skfuzzy import control as ctrl
 from skfuzzy_helper import *
 
 
-def fuzzy_benchmark(_altitude, speed, _angle):
+def fuzzy_benchmark(_altitude, speed, _angle, _drag):
     angle = ctrl.Antecedent(np.arange(-90, 90, 1), 'angle')
+    drag = ctrl.Antecedent(np.arange(-100, 100, 1), 'drag')
     altitude = ctrl.Antecedent(np.arange(0, 400, 1), 'altitude')
     velocity = ctrl.Antecedent(np.arange(-100, 100, 1), 'velocity')
     throttle = ctrl.Consequent(np.arange(-100, 100, 1), 'throttle')
@@ -72,6 +73,13 @@ def fuzzy_benchmark(_altitude, speed, _angle):
     velocity['DOWN_SMALL'] = trimf(velocity.universe, [0, 33, 66])
     velocity['DOWN_LARGE'] = trapmf(velocity.universe, [33, 66, 100, 100])
 
+    # Drag membership functions
+    drag['LEFT_LARGE'] = trapmf(drag.universe, [-100, -100, -66, -33])
+    drag['LEFT_SMALL'] = trimf(drag.universe, [-66, -33, 0])
+    drag['ZERO'] = trimf(drag.universe, [-33, 0, 33])
+    drag['RIGHT_SMALL'] = trimf(drag.universe, [0, 33, 66])
+    drag['RIGHT_LARGE'] = trapmf(drag.universe, [33, 66, 100, 100])
+
     # Force membership functions
     throttle['DOWN_LARGE'] = trapmf(throttle.universe, [-100, -100, -66, -33])
     throttle['DOWN_SMALL'] = trimf(throttle.universe, [-66, -33, 0])
@@ -79,12 +87,12 @@ def fuzzy_benchmark(_altitude, speed, _angle):
     throttle['UP_SMALL'] = trimf(throttle.universe, [0, 33, 66])
     throttle['UP_LARGE'] = trapmf(throttle.universe, [33, 66, 100, 100])
 
-
-    # Force membership functions
+    # Angle membership functions
     angle['RIGHT'] = trimf(angle.universe, [-90, -90, 0])
     angle['CENTER'] = trimf(angle.universe, [-20, 0, 20])
     angle['LEFT'] = trimf(angle.universe, [0, 90, 90])
 
+    # Direction membership functions
     direction['LEFT'] = trimf(direction.universe, [-3, -3, 0])
     direction['CENTER'] = trimf(direction.universe, [-0.2, 0, 0.2])
     direction['RIGHT'] = trimf(direction.universe, [0, 3, 3])
@@ -96,22 +104,47 @@ def fuzzy_benchmark(_altitude, speed, _angle):
     #throttle.view()
     #angle.view()
 
-    # throttling rules
-    rule1 = ctrl.Rule(~altitude['NEAR_ZERO'], throttle['DOWN_LARGE'])
-    rule2 = ctrl.Rule(altitude['SMALL'] | velocity['DOWN_LARGE'], throttle['UP_LARGE'])
-    rule3 = ctrl.Rule(altitude['NEAR_ZERO'] & ~velocity['ZERO'], throttle['UP_SMALL'])
-    rule4 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['ZERO'], throttle['ZERO'])
-    rule5 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['UP_SMALL'], throttle['DOWN_LARGE'])
-    rule6 = ctrl.Rule(altitude['NEAR_ZERO'] & (velocity['ZERO'] | velocity['DOWN_SMALL']), throttle['DOWN_SMALL'])
+    rule1 = ctrl.Rule(altitude['LARGE'] & velocity['DOWN_LARGE'], throttle['ZERO'])
+    rule2 = ctrl.Rule(altitude['LARGE'] & velocity['DOWN_SMALL'], throttle['DOWN_LARGE'])
+    rule3 = ctrl.Rule(altitude['LARGE'] & velocity['ZERO'], throttle['DOWN_LARGE'])
+    rule4 = ctrl.Rule(altitude['LARGE'] & velocity['UP_SMALL'], throttle['DOWN_LARGE'])
+    rule5 = ctrl.Rule(altitude['LARGE'] & velocity['UP_LARGE'], throttle['DOWN_LARGE'])
+
+    rule6 = ctrl.Rule(altitude['MEDIUM'] & velocity['DOWN_LARGE'], throttle['UP_SMALL'])
+    rule7 = ctrl.Rule(altitude['MEDIUM'] & velocity['DOWN_SMALL'], throttle['ZERO'])
+    rule8 = ctrl.Rule(altitude['MEDIUM'] & velocity['ZERO'], throttle['DOWN_SMALL'])
+    rule9 = ctrl.Rule(altitude['MEDIUM'] & velocity['UP_SMALL'], throttle['DOWN_LARGE'])
+    rule10 = ctrl.Rule(altitude['MEDIUM'] & velocity['UP_LARGE'], throttle['DOWN_LARGE'])
+
+    rule11 = ctrl.Rule(altitude['SMALL'] & velocity['DOWN_LARGE'], throttle['UP_SMALL'])
+    rule12 = ctrl.Rule(altitude['SMALL'] & velocity['DOWN_SMALL'], throttle['DOWN_SMALL'])
+    rule13 = ctrl.Rule(altitude['SMALL'] | velocity['ZERO'], throttle['DOWN_SMALL'])
+    rule14 = ctrl.Rule(altitude['SMALL'] & velocity['ZERO'], throttle['DOWN_LARGE'])
+    rule15 = ctrl.Rule(altitude['SMALL'] | velocity['UP_SMALL'], throttle['DOWN_SMALL'])
+    rule16 = ctrl.Rule(altitude['SMALL'] & velocity['UP_LARGE'], throttle['DOWN_LARGE'])
+
+    rule17 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['DOWN_LARGE'], throttle['UP_LARGE'])
+    rule18 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['DOWN_SMALL'], throttle['UP_LARGE'])
+    rule19 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['ZERO'], throttle['DOWN_SMALL'])
+    rule20 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['UP_SMALL'], throttle['DOWN_SMALL'])
+    rule21 = ctrl.Rule(altitude['NEAR_ZERO'] | velocity['UP_LARGE'], throttle['DOWN_SMALL'])
+
+    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9, rule10, rule11, rule12, rule13, rule14, rule15, rule16, rule17, rule18, rule19, rule20, rule21])
 
     # direction rules
-    rule7 = ctrl.Rule((angle['CENTER'] & ~(angle['LEFT'] | angle['RIGHT'])) & (altitude['LARGE'] | altitude['MEDIUM']), direction['CENTER'])
-    rule8 = ctrl.Rule(angle['RIGHT'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['LEFT'])
-    rule9 = ctrl.Rule(angle['LEFT'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['RIGHT'])
-    rule10 = ctrl.Rule(~(altitude['LARGE'] | altitude['MEDIUM']), direction['ZERO'])
+    rule22 = ctrl.Rule((angle['CENTER'] & ~(angle['LEFT'] | angle['RIGHT'])) & (altitude['LARGE'] | altitude['MEDIUM']), direction['CENTER'])
+    rule23 = ctrl.Rule(angle['RIGHT'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['LEFT'])
+    rule24 = ctrl.Rule(angle['LEFT'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['RIGHT'])
+    rule25 = ctrl.Rule(~(altitude['LARGE'] | altitude['MEDIUM']), direction['ZERO'])
+    rule26 = ctrl.Rule(drag['RIGHT_LARGE'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['RIGHT'])
+    rule27 = ctrl.Rule(drag['LEFT_LARGE'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['LEFT'])
+    rule28 = ctrl.Rule((drag['LEFT_LARGE'] | drag['RIGHT_LARGE']) & (altitude['LARGE'] | altitude['MEDIUM']), throttle['UP_LARGE'])
+    rule29 = ctrl.Rule((drag['LEFT_SMALL'] | drag['RIGHT_SMALL']) & (altitude['LARGE'] | altitude['MEDIUM']), throttle['UP_SMALL'])
+    rule30 = ctrl.Rule((drag['LEFT_SMALL'] | drag['LEFT_LARGE']) & angle['RIGHT'], throttle['DOWN_LARGE'])
+    rule31 = ctrl.Rule((drag['RIGHT_SMALL'] | drag['RIGHT_LARGE']) & angle['LEFT'], throttle['DOWN_LARGE'])
+    rule32 = ctrl.Rule((drag['LEFT_SMALL'] | drag['RIGHT_SMALL']), direction['ZERO'])
 
-    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6])
-    angle_ctrl = ctrl.ControlSystem([rule7, rule8, rule9, rule10])
+    angle_ctrl = ctrl.ControlSystem([rule22, rule23, rule24, rule25, rule26, rule27, rule28, rule29, rule30, rule31, rule32])
 
     throttling = ctrl.ControlSystemSimulation(throttling_ctrl)
     angling = ctrl.ControlSystemSimulation(angle_ctrl)
@@ -123,6 +156,7 @@ def fuzzy_benchmark(_altitude, speed, _angle):
 
     angling.input['altitude'] = _altitude
     angling.input['angle'] = _angle
+    angling.input['drag'] = _drag
 
 
     # Crunch the numbers
@@ -131,71 +165,14 @@ def fuzzy_benchmark(_altitude, speed, _angle):
 
     throttling.compute()
 
-    if _angle == 0:
+    if _angle == 0 and _drag <= 30:
         direction_out = 0
+        slow = 0
     else:
         angling.compute()
         direction_out = angling.output['direction']
+        slow = angling.output['throttle']
 
     throttle_out = throttling.output['throttle']
 
-    return float(throttle_out), float(direction_out)
-
-def fuzzy_test():
-    altitude = ctrl.Antecedent(np.arange(0, 11, 1), 'altitude')
-    velocity = ctrl.Antecedent(np.arange(0, 11, 1), 'velocity')
-    throttle = ctrl.Consequent(np.arange(0, 26, 1), 'throttle')
-
-    # Auto-membership function population is possible with .automf(3, 5, or 7)
-    altitude.automf(3)
-    velocity.automf(3)
-
-    throttle['low'] = fuzz.trimf(throttle.universe, [0, 0, 13])
-    throttle['medium'] = fuzz.trimf(throttle.universe, [0, 13, 25])
-    throttle['high'] = fuzz.trimf(throttle.universe, [13, 25, 25])
-
-    # You can see how these look with .view()
-    altitude['average'].view()
-    velocity.view()
-    throttle.view()
-
-    rule1 = ctrl.Rule(altitude['poor'] | velocity['poor'], throttle['low'])
-    rule2 = ctrl.Rule(velocity['average'], throttle['medium'])
-    rule3 = ctrl.Rule(velocity['good'] | altitude['good'], throttle['high'])
-    rule4 = ctrl.Rule(velocity['low'] )
-
-    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
-
-    throttling = ctrl.ControlSystemSimulation(throttling_ctrl)
-
-    # Pass inputs to the ControlSystem using Antecedent labels with Pythonic API
-    # Note: if you like passing many inputs all at once, use .inputs(dict_of_data)
-    throttling.input['altitude'] = 401
-    throttling.input['velocity'] = 13
-
-    # Crunch the numbers
-    throttling.compute()
-
-    """
-    Once computed, we can view the result as well as visualize it.
-    """
-    print(throttling.output['throttle'])
-    throttle.view(sim=throttling)
-
-    """
-    .. image:: PLOT2RST.current_figure
-
-    The resulting suggested throttle is **20.24%**.
-
-    Final thoughts
-    --------------
-
-    The power of fuzzy systems is allowing complicated, intuitive behavior based
-    on a sparse system of rules with minimal overhead. Note our membership
-    function universes were coarse, only defined at the integers, but
-    ``fuzz.interp_membership`` allowed the effective resolution to increase on
-    demand. This system can respond to arbitrarily small changes in inputs,
-    and the processing burden is minimal.
-    """
-    plt.show()
-
+    return float(throttle_out), float(direction_out), float(slow)

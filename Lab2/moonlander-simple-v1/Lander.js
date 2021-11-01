@@ -12,7 +12,7 @@ Lander = function() {
 		drag = 0.9997, 
 		bouncing = 0, 
 		exploding = false, 
-		targetRotation = 0,
+		targetRotation = 60,
 		
 		lastRotationTime = 0, 
 		counter = 0, 
@@ -39,7 +39,7 @@ Lander = function() {
 		abortCounter = -1; 
 		lastAbort = Date.now(); 
 		//vel.reset(0.415, 0); //- org
-		vel.reset(0.0, 0); 
+		vel.reset(0.415, 0);
 		pos.reset(110,150); 
 		//this.rotation = targetRotation = -90; //- org
 		scale = 1; 

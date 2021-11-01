@@ -239,6 +239,19 @@ function Landscape(){
 		
 	
 	function setupData() { 
+	/*
+	original:
+		points.push(new Vector2(0.5, 409.5));
+		points.push(new Vector2(51.75, 409.5));
+		points.push(new Vector2(151.75, 409.5));
+		points.push(new Vector2(251.75, 409.5));
+		points.push(new Vector2(351.75, 409.5));
+		points.push(new Vector2(451.75, 409.5));
+		points.push(new Vector2(851.75, 409.5));
+		points.push(new Vector2(951.75, 409.5));
+	
+	*/
+	
 		points.push(new Vector2(0.5, 409.5));
 		points.push(new Vector2(51.75, 409.5));
 		points.push(new Vector2(151.75, 409.5));

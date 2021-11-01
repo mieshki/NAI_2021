@@ -75,6 +75,7 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 
 
 if __name__ == '__main__':
+    #driver = Chrome()
     driver = Firefox()
     web_path = f'{pathlib.Path().resolve()}\moonlander-simple-v1\index.html'
     print(web_path)
@@ -83,25 +84,32 @@ if __name__ == '__main__':
     game_launch()
     time.sleep(2)
     play = True
+
     while play:
         altitude, horizontal_velocity, vertical_velocity, angle = get_info(driver)
 
         # output -100 - 100
-        output, curr = fuzzy_benchmark(altitude, vertical_velocity, angle)
+        output, curr, slow = fuzzy_benchmark(altitude, vertical_velocity, angle, horizontal_velocity)
         _throttle = translate(output, 1, 101, 0, 3)
+        _slow = translate(slow, 1, 101, 0, 3)
         # 1 - 10ms
         print(curr)
         if abs(curr) < 1:
             pass
         else:
             changeDirection(curr)
+            if _slow <= 0:
+                pass
+            else:
+                throttle(_slow)
         #print(output)
-        if output < 1:
+        # output <0, 100>
+        throttle_time_in_seconds = translate(output, 1, 101, 0, 9)
+        if output < 5:
             pass
         else:
-            #print(f'throttle for={_throttle}')
-            throttle(_throttle)
-
+            print(f'throttle for={throttle_time_in_seconds}')
+            throttle(throttle_time_in_seconds)
 
 """
         altitude_sqrt = math.sqrt(altitude)
