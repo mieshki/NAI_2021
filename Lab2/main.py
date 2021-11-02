@@ -45,18 +45,20 @@ def throttle(power):
     time.sleep(power)
     pyautogui.keyUp("up")
 
-def changeDirection(step, sign):
+def changeDirection(step):
     """ changeDirection(power) This function handles rocket angle.
     :param level: Integer from 1 to 3. It will correct the angle of rocket by pressing right key provided times.
     :return:
     """
+    sign = abs(step) == step
+    print(sign)
     if sign:
         direction = "left"
     else:
         direction = "right"
     print(direction)
     pyautogui.keyDown(direction)
-    time.sleep(step)
+    time.sleep(abs(step)/100)
     pyautogui.keyUp(direction)
 
 
@@ -73,7 +75,7 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 
 
 if __name__ == '__main__':
-    driver = Chrome()
+    driver = Firefox()
     web_path = f'{pathlib.Path().resolve()}\moonlander-simple-v1\index.html'
     print(web_path)
     driver.get(web_path)
@@ -85,14 +87,21 @@ if __name__ == '__main__':
         altitude, horizontal_velocity, vertical_velocity, angle = get_info(driver)
 
         # output -100 - 100
-        output = fuzzy_benchmark(altitude, vertical_velocity)
+        output, curr = fuzzy_benchmark(altitude, vertical_velocity, angle)
         _throttle = translate(output, 1, 101, 0, 3)
         # 1 - 10ms
+        print(curr)
+        if abs(curr) < 1:
+            pass
+        else:
+            changeDirection(curr)
+        #print(output)
         if output < 1:
             pass
         else:
-            print(f'throttle for={_throttle}')
+            #print(f'throttle for={_throttle}')
             throttle(_throttle)
+
 
 """
         altitude_sqrt = math.sqrt(altitude)

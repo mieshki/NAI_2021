@@ -52,10 +52,12 @@ from skfuzzy import control as ctrl
 from skfuzzy_helper import *
 
 
-def fuzzy_benchmark(_altitude, speed):
+def fuzzy_benchmark(_altitude, speed, _angle):
+    angle = ctrl.Antecedent(np.arange(-90, 90, 1), 'angle')
     altitude = ctrl.Antecedent(np.arange(0, 400, 1), 'altitude')
     velocity = ctrl.Antecedent(np.arange(-100, 100, 1), 'velocity')
     throttle = ctrl.Consequent(np.arange(-100, 100, 1), 'throttle')
+    direction = ctrl.Consequent(np.arange(-3, 3, 0.2), 'direction')
 
     # Altitude membership functions
     altitude['NEAR_ZERO'] = trimf(altitude.universe, [0, 0, 200])
@@ -77,31 +79,67 @@ def fuzzy_benchmark(_altitude, speed):
     throttle['UP_SMALL'] = trimf(throttle.universe, [0, 33, 66])
     throttle['UP_LARGE'] = trapmf(throttle.universe, [33, 66, 100, 100])
 
+
+    # Force membership functions
+    angle['RIGHT'] = trimf(angle.universe, [-90, -90, 0])
+    angle['CENTER'] = trimf(angle.universe, [-20, 0, 20])
+    angle['LEFT'] = trimf(angle.universe, [0, 90, 90])
+
+    direction['LEFT'] = trimf(direction.universe, [-3, -3, 0])
+    direction['CENTER'] = trimf(direction.universe, [-0.2, 0, 0.2])
+    direction['RIGHT'] = trimf(direction.universe, [0, 3, 3])
+    direction['ZERO'] = trimf(direction.universe, [0,0,0])
+
+    #direction.view()
     #altitude.view()
     #velocity.view()
     #throttle.view()
+    #angle.view()
 
+    # throttling rules
     rule1 = ctrl.Rule(~altitude['NEAR_ZERO'], throttle['DOWN_LARGE'])
     rule2 = ctrl.Rule(altitude['SMALL'] | velocity['DOWN_LARGE'], throttle['UP_LARGE'])
     rule3 = ctrl.Rule(altitude['NEAR_ZERO'] & ~velocity['ZERO'], throttle['UP_SMALL'])
     rule4 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['ZERO'], throttle['ZERO'])
-    rule5 = ctrl.Rule(altitude['NEAR_ZERO'] & (velocity['ZERO'] | velocity['DOWN_SMALL']), throttle['DOWN_SMALL'])
+    rule5 = ctrl.Rule(altitude['NEAR_ZERO'] & velocity['UP_SMALL'], throttle['DOWN_LARGE'])
+    rule6 = ctrl.Rule(altitude['NEAR_ZERO'] & (velocity['ZERO'] | velocity['DOWN_SMALL']), throttle['DOWN_SMALL'])
 
-    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5])
+    # direction rules
+    rule7 = ctrl.Rule((angle['CENTER'] & ~(angle['LEFT'] | angle['RIGHT'])) & (altitude['LARGE'] | altitude['MEDIUM']), direction['CENTER'])
+    rule8 = ctrl.Rule(angle['RIGHT'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['LEFT'])
+    rule9 = ctrl.Rule(angle['LEFT'] & (altitude['LARGE'] | altitude['MEDIUM']), direction['RIGHT'])
+    rule10 = ctrl.Rule(~(altitude['LARGE'] | altitude['MEDIUM']), direction['ZERO'])
+
+    throttling_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6])
+    angle_ctrl = ctrl.ControlSystem([rule7, rule8, rule9, rule10])
 
     throttling = ctrl.ControlSystemSimulation(throttling_ctrl)
+    angling = ctrl.ControlSystemSimulation(angle_ctrl)
 
     # Pass inputs to the ControlSystem using Antecedent labels with Pythonic API
     # Note: if you like passing many inputs all at once, use .inputs(dict_of_data)
     throttling.input['altitude'] = _altitude
     throttling.input['velocity'] = speed
 
+    angling.input['altitude'] = _altitude
+    angling.input['angle'] = _angle
+
+
     # Crunch the numbers
-    print(f'altitude={_altitude}, speed={speed}')
+
+    # print(f'altitude={_altitude}, speed={speed}')
+
     throttling.compute()
-    output = throttling.output['throttle']
-    print(output)
-    return int(output)
+
+    if _angle == 0:
+        direction_out = 0
+    else:
+        angling.compute()
+        direction_out = angling.output['direction']
+
+    throttle_out = throttling.output['throttle']
+
+    return float(throttle_out), float(direction_out)
 
 def fuzzy_test():
     altitude = ctrl.Antecedent(np.arange(0, 11, 1), 'altitude')
