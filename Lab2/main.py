@@ -25,6 +25,8 @@ angle = None
 fuzzy_output_throttle_out = None
 fuzzy_output_direction_out = None
 fuzzy_output_slow = None
+
+start_fuzzy_logic_computing = None
 # endregion
 
 # region PY_AUTO_GUI PROCESS
@@ -42,6 +44,8 @@ def py_auto_gui_process():
     global fuzzy_output_throttle_out
     global fuzzy_output_direction_out
     global fuzzy_output_slow
+
+    global start_fuzzy_logic_computing
     # endregion
 
     # region HELPERS
@@ -50,9 +54,17 @@ def py_auto_gui_process():
             game_launch() It locates main point of the window and click mouse button to start game.
             To achieve that used image detection from pyautogui lib
         """
-        time.sleep(2)
-        gameLocation = pyautogui.locateOnScreen('starter.png', confidence=0.5)
-        startPoint = pyautogui.center(gameLocation)
+        while pyautogui.locateOnScreen('starter.png', confidence=0.5) is None:
+            print(f'{PROCESS_HEADER}Waiting for starting screen...')
+            time.sleep(2)
+
+        print(f'{PROCESS_HEADER}Starting game!')
+        game_location = pyautogui.locateOnScreen('starter.png', confidence=0.5)
+
+        with start_fuzzy_logic_computing.get_lock():
+            start_fuzzy_logic_computing.value = 1
+
+        startPoint = pyautogui.center(game_location)
         x, y = startPoint
         pyautogui.moveTo(x, y)
         pyautogui.click()
@@ -94,9 +106,6 @@ def py_auto_gui_process():
         time.sleep(power)
         pyautogui.keyUp("up")
     # endregion
-
-    print(f'Waiting 2 seconds to start')
-    time.sleep(2)
 
     print(f'Launching game')
     game_launch()
@@ -157,6 +166,8 @@ def data_collector_process():
     global fuzzy_output_throttle_out
     global fuzzy_output_direction_out
     global fuzzy_output_slow
+
+    global start_fuzzy_logic_computing
     # endregion
 
     driver = Chrome()
@@ -198,9 +209,9 @@ def fuzzy_logic_process():
     global fuzzy_output_throttle_out
     global fuzzy_output_direction_out
     global fuzzy_output_slow
-    # endregion
 
-    time.sleep(5)
+    global start_fuzzy_logic_computing
+    # endregion
 
     angle_antecedent = ctrl.Antecedent(np.arange(-90, 90, 1), 'angle')
     drag_antecedent = ctrl.Antecedent(np.arange(-100, 100, 1), 'drag')
@@ -331,7 +342,21 @@ def fuzzy_logic_process():
             fuzzy_output_slow.value = float(_slow)
 
     delta_time = time.time()
+
+    is_fuzzy_logic_currently_running = False
+
     while True:
+        with start_fuzzy_logic_computing.get_lock():
+            if start_fuzzy_logic_computing.value == 0:
+                print(f'{PROCESS_HEADER}Not computing fuzzy logic...')
+                is_fuzzy_logic_currently_running = False
+                time.sleep(2)
+                continue
+            else:
+                if is_fuzzy_logic_currently_running is False:
+                    print(f'{PROCESS_HEADER}Starting computing fuzzy logic...')
+                    is_fuzzy_logic_currently_running = True
+
         angle_copy, drag_copy = gather_data()
 
         # print(f'altitude={_altitude}, speed={speed}')
@@ -367,24 +392,22 @@ def init_new_process(process_type):
 
     if process_type == Process.fuzzy_logic:
         try:
-            time.sleep(2)
             fuzzy_logic_process()
         except Exception as e:
-            print(f'Fuzzy logic process died, {str(e)}')
+            print(f'Fuzzy logic process died, reason: {str(e)}')
     elif process_type == Process.data_collector:
         try:
             data_collector_process()
         except Exception as e:
-            print(f'Data collector process died, {str(e)}')
+            print(f'Data collector process died, reason: {str(e)}')
     elif process_type == Process.py_auto_gui:
         try:
-            time.sleep(2)
             py_auto_gui_process()
         except Exception as e:
-            print(f'Py auto gui process died, {str(e)}')
+            print(f'Py auto gui process died, reason: {str(e)}')
 
 
-def process_variables_initializer(_counter, _altitude, _horizontal_velocity, _vertical_velocity, _angle, _fuzzy_output_throttle_out, _fuzzy_output_direction_out, _fuzzy_output_slow):
+def process_variables_initializer(_counter, _altitude, _horizontal_velocity, _vertical_velocity, _angle, _fuzzy_output_throttle_out, _fuzzy_output_direction_out, _fuzzy_output_slow, _start_fuzzy_logic_computing):
     # region GLOBALS
     global counter
 
@@ -396,6 +419,8 @@ def process_variables_initializer(_counter, _altitude, _horizontal_velocity, _ve
     global fuzzy_output_throttle_out
     global fuzzy_output_direction_out
     global fuzzy_output_slow
+
+    global start_fuzzy_logic_computing
     # endregion
 
     counter = _counter
@@ -407,6 +432,8 @@ def process_variables_initializer(_counter, _altitude, _horizontal_velocity, _ve
     fuzzy_output_throttle_out = _fuzzy_output_throttle_out
     fuzzy_output_direction_out = _fuzzy_output_direction_out
     fuzzy_output_slow = _fuzzy_output_slow
+
+    start_fuzzy_logic_computing = _start_fuzzy_logic_computing
 
 # endregion
 
@@ -423,10 +450,12 @@ if __name__ == '__main__':
     fuzzy_output_direction_out = multiprocessing.Value('f', 0)
     fuzzy_output_slow = multiprocessing.Value('f', 0)
 
+    start_fuzzy_logic_computing = multiprocessing.Value('i', 0)
+
     pool = multiprocessing.Pool(processes=3,
                                 initializer=process_variables_initializer,
                                 initargs=(counter, altitude, horizontal_velocity, vertical_velocity, angle,
-                                          fuzzy_output_throttle_out, fuzzy_output_direction_out, fuzzy_output_slow))
+                                          fuzzy_output_throttle_out, fuzzy_output_direction_out, fuzzy_output_slow, start_fuzzy_logic_computing))
     pool.map(init_new_process, [Process.fuzzy_logic, Process.data_collector, Process.py_auto_gui])
 
 """
