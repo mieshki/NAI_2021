@@ -46,7 +46,7 @@ Lander = function() {
 		while(horizontal_velocity < 0.15 && horizontal_velocity > -0.15){
 			horizontal_velocity = (Math.random() * (horizontal_velocity_max - horizontal_velocity_min) + horizontal_velocity_min) / 100;
 		}
-		horizontal_velocity = -0.5
+		//horizontal_velocity = -0.5
 		
 		console.log('horizontal velocity' + horizontal_velocity)
 		vel.reset(horizontal_velocity, 0);
