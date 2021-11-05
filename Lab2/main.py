@@ -362,18 +362,29 @@ class Process(Enum):
     py_auto_gui = 3
 
 
-def process_initializer(process_type):
+def init_new_process(process_type):
     print(f'New process: {process_type}')
 
     if process_type == Process.fuzzy_logic:
-        fuzzy_logic_process()
+        try:
+            time.sleep(2)
+            fuzzy_logic_process()
+        except Exception as e:
+            print(f'Fuzzy logic process died, {str(e)}')
     elif process_type == Process.data_collector:
-        data_collector_process()
+        try:
+            data_collector_process()
+        except Exception as e:
+            print(f'Data collector process died, {str(e)}')
     elif process_type == Process.py_auto_gui:
-        py_auto_gui_process()
+        try:
+            time.sleep(2)
+            py_auto_gui_process()
+        except Exception as e:
+            print(f'Py auto gui process died, {str(e)}')
 
 
-def process_init_counter(_counter, _altitude, _horizontal_velocity, _vertical_velocity, _angle, _fuzzy_output_throttle_out, _fuzzy_output_direction_out, _fuzzy_output_slow):
+def process_variables_initializer(_counter, _altitude, _horizontal_velocity, _vertical_velocity, _angle, _fuzzy_output_throttle_out, _fuzzy_output_direction_out, _fuzzy_output_slow):
     # region GLOBALS
     global counter
 
@@ -413,10 +424,10 @@ if __name__ == '__main__':
     fuzzy_output_slow = multiprocessing.Value('f', 0)
 
     pool = multiprocessing.Pool(processes=3,
-                                initializer=process_init_counter,
+                                initializer=process_variables_initializer,
                                 initargs=(counter, altitude, horizontal_velocity, vertical_velocity, angle,
                                           fuzzy_output_throttle_out, fuzzy_output_direction_out, fuzzy_output_slow))
-    pool.map(process_initializer, [Process.fuzzy_logic, Process.data_collector, Process.py_auto_gui])
+    pool.map(init_new_process, [Process.fuzzy_logic, Process.data_collector, Process.py_auto_gui])
 
 """
         altitude_sqrt = math.sqrt(altitude)
