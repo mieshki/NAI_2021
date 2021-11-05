@@ -110,35 +110,39 @@ def py_auto_gui_process():
     game_launch()
 
     _throttle = 0
-    _slow = 0
+    _horizontal_throttle = 0
     _direction = 0
 
     while True:
         with fuzzy_output_throttle_out.get_lock():
             _throttle_time_in_seconds = translate(fuzzy_output_throttle_out.value, 1, 101, 0, 3)
             throttle_copy = fuzzy_output_throttle_out.value
-            _slow = translate(fuzzy_output_slow.value, 1, 101, 0, 3)
+            _horizontal_throttle = translate(fuzzy_output_slow.value, 1, 101, 0, 3)
             _direction = fuzzy_output_direction_out.value
-        # 1 - 10ms
-        if abs(_direction) < 1:
-            pass
-        else:
-            changeDirection(_direction)
-            if _slow <= 0:
+
+        with altitude.get_lock():
+            if abs(horizontal_velocity.value) <= 20 and angle.value == 0:
+                _horizontal_throttle = 0
                 pass
             else:
-                throttle(_slow)
+                changeDirection(_direction)
+
+        if _horizontal_throttle <= 0:
+            pass
+        else:
+            throttle(_horizontal_throttle)
+
         # print(output)
         # output <0, 100>
         if throttle_copy < 5:
             pass
         else:
-            print(f'{PROCESS_HEADER}Throttle for={_throttle_time_in_seconds}')
+            print(f'{PROCESS_HEADER}Throttle for={round(_throttle_time_in_seconds, 3)} seconds')
             throttle(_throttle_time_in_seconds)
 
         with altitude.get_lock():
             if altitude.value <= 5:
-                print(f'{PROCESS_HEADER} - landed! Waiting 4 seconds to next game...')
+                print(f'{PROCESS_HEADER}(maybe) landed! Waiting 4 seconds to next game...')
                 with start_fuzzy_logic_computing.get_lock():
                     start_fuzzy_logic_computing.value = 0
                 time.sleep(4)
@@ -246,9 +250,9 @@ def fuzzy_logic_process():
 
     """ Drag membership functions """
     drag_antecedent['LEFT_LARGE'] = trapmf(drag_antecedent.universe, [-100, -100, -66, -33])
-    drag_antecedent['LEFT_SMALL'] = trimf(drag_antecedent.universe, [-66, -33, 0])
-    drag_antecedent['ZERO'] = trimf(drag_antecedent.universe, [-33, 0, 33])
-    drag_antecedent['RIGHT_SMALL'] = trimf(drag_antecedent.universe, [0, 33, 66])
+    drag_antecedent['LEFT_SMALL'] = trimf(drag_antecedent.universe, [-66, -25, 0])
+    drag_antecedent['ZERO'] = trimf(drag_antecedent.universe, [-25, 0, 25])
+    drag_antecedent['RIGHT_SMALL'] = trimf(drag_antecedent.universe, [0, 25, 66])
     drag_antecedent['RIGHT_LARGE'] = trapmf(drag_antecedent.universe, [33, 66, 100, 100])
 
     """ Force membership functions """
@@ -280,53 +284,105 @@ def fuzzy_logic_process():
     # endregion
 
     # region THROTTLE RULES
-    rule1 = ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['ZERO'])
-    rule2 = ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['DOWN_LARGE'])
-    rule3 = ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['ZERO'], throttle_consequent['DOWN_LARGE'])
-    rule4 = ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_LARGE'])
-    rule5 = ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_LARGE'])
+    throttle_control_system_rules = \
+    [
+        ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['ZERO']),
+        ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['DOWN_LARGE']),
+        ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['ZERO'], throttle_consequent['DOWN_LARGE']),
+        ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_LARGE']),
+        ctrl.Rule(altitude_antecedent['LARGE'] & velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_LARGE']),
 
-    rule6 = ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['UP_SMALL'])
-    rule7 = ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['ZERO'])
-    rule8 = ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['ZERO'], throttle_consequent['DOWN_SMALL'])
-    rule9 = ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_LARGE'])
-    rule10 = ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_LARGE'])
+        ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['ZERO']),
+        ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['ZERO'], throttle_consequent['DOWN_SMALL']),
+        ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_LARGE']),
+        ctrl.Rule(altitude_antecedent['MEDIUM'] & velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_LARGE']),
 
-    rule11 = ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['UP_SMALL'])
-    rule12 = ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['DOWN_SMALL'])
-    rule13 = ctrl.Rule(altitude_antecedent['SMALL'] | velocity_antecedent['ZERO'], throttle_consequent['DOWN_SMALL'])
-    rule14 = ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['ZERO'], throttle_consequent['DOWN_LARGE'])
-    rule15 = ctrl.Rule(altitude_antecedent['SMALL'] | velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_SMALL'])
-    rule16 = ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_LARGE'])
+        ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['DOWN_SMALL']),
+        ctrl.Rule(altitude_antecedent['SMALL'] | velocity_antecedent['ZERO'], throttle_consequent['DOWN_SMALL']),
+        ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['ZERO'], throttle_consequent['DOWN_LARGE']),
+        ctrl.Rule(altitude_antecedent['SMALL'] | velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_SMALL']),
+        ctrl.Rule(altitude_antecedent['SMALL'] & velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_LARGE']),
 
-    rule17 = ctrl.Rule(altitude_antecedent['NEAR_ZERO'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['UP_LARGE'])
-    rule18 = ctrl.Rule(altitude_antecedent['NEAR_ZERO'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['UP_LARGE'])
-    rule19 = ctrl.Rule(altitude_antecedent['NEAR_ZERO'] | velocity_antecedent['ZERO'], throttle_consequent['DOWN_SMALL'])
-    rule20 = ctrl.Rule(altitude_antecedent['NEAR_ZERO'] | velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_SMALL'])
-    rule21 = ctrl.Rule(altitude_antecedent['NEAR_ZERO'] | velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_SMALL'])
+        ctrl.Rule(altitude_antecedent['NEAR_ZERO'] & velocity_antecedent['DOWN_LARGE'], throttle_consequent['UP_LARGE']),
+        ctrl.Rule(altitude_antecedent['NEAR_ZERO'] & velocity_antecedent['DOWN_SMALL'], throttle_consequent['UP_LARGE']),
+        ctrl.Rule(altitude_antecedent['NEAR_ZERO'] | velocity_antecedent['ZERO'], throttle_consequent['DOWN_SMALL']),
+        ctrl.Rule(altitude_antecedent['NEAR_ZERO'] | velocity_antecedent['UP_SMALL'], throttle_consequent['DOWN_SMALL']),
+        ctrl.Rule(altitude_antecedent['NEAR_ZERO'] | velocity_antecedent['UP_LARGE'], throttle_consequent['DOWN_SMALL'])
+    ]
+
+
+
     # endregion
 
+    """
+    LEFT_LARGE [-100, -100, -66, -33])
+    LEFT_SMALL [-66, -33, 0])
+    ZERO [-33, 0, 33])
+    RIGHT_SMALL [0, 33, 66])
+    RIGHT_LARGE [33, 66, 100, 100])
+    """
     # region DIRECTION rules
-    rule22 = ctrl.Rule((angle_antecedent['CENTER'] & ~(angle_antecedent['LEFT'] | angle_antecedent['RIGHT'])) & (altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), direction_consequent['CENTER'])
-    rule23 = ctrl.Rule(angle_antecedent['RIGHT'] & (altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), direction_consequent['LEFT'])
-    rule24 = ctrl.Rule(angle_antecedent['LEFT'] & (altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), direction_consequent['RIGHT'])
-    rule25 = ctrl.Rule(~(altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), direction_consequent['ZERO'])
-    rule26 = ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & (altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), direction_consequent['RIGHT'])
-    rule27 = ctrl.Rule(drag_antecedent['LEFT_LARGE'] & (altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), direction_consequent['LEFT'])
-    rule28 = ctrl.Rule((drag_antecedent['LEFT_LARGE'] | drag_antecedent['RIGHT_LARGE']) & (altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), throttle_consequent['UP_LARGE'])
-    rule29 = ctrl.Rule((drag_antecedent['LEFT_SMALL'] | drag_antecedent['RIGHT_SMALL']) & (altitude_antecedent['LARGE'] | altitude_antecedent['MEDIUM']), throttle_consequent['UP_SMALL'])
-    rule30 = ctrl.Rule((drag_antecedent['LEFT_SMALL'] | drag_antecedent['LEFT_LARGE']) & angle_antecedent['RIGHT'], throttle_consequent['DOWN_LARGE'])
-    rule31 = ctrl.Rule((drag_antecedent['RIGHT_SMALL'] | drag_antecedent['RIGHT_LARGE']) & angle_antecedent['LEFT'], throttle_consequent['DOWN_LARGE'])
-    rule32 = ctrl.Rule((drag_antecedent['LEFT_SMALL'] | drag_antecedent['RIGHT_SMALL']), direction_consequent['ZERO'])
+
+    angle_control_system_rules = \
+    [
+        ctrl.Rule(drag_antecedent['LEFT_LARGE'] & angle_antecedent['RIGHT'], direction_consequent['LEFT']),
+        ctrl.Rule(drag_antecedent['LEFT_LARGE'] & angle_antecedent['LEFT'], direction_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['LEFT_LARGE'] & angle_antecedent['CENTER'], direction_consequent['LEFT']),
+
+        ctrl.Rule(drag_antecedent['LEFT_SMALL'] & angle_antecedent['RIGHT'], direction_consequent['LEFT']),
+        ctrl.Rule(drag_antecedent['LEFT_SMALL'] & angle_antecedent['LEFT'], direction_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['LEFT_SMALL'] & angle_antecedent['CENTER'], direction_consequent['LEFT']),
+
+        ctrl.Rule(drag_antecedent['ZERO'] & angle_antecedent['RIGHT'], direction_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['ZERO'] & angle_antecedent['LEFT'], direction_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['ZERO'] & angle_antecedent['CENTER'], direction_consequent['ZERO']),
+
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & angle_antecedent['RIGHT'], direction_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & angle_antecedent['LEFT'], direction_consequent['RIGHT']),
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & angle_antecedent['CENTER'], direction_consequent['LEFT']),
+
+        ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & angle_antecedent['RIGHT'], direction_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & angle_antecedent['LEFT'], direction_consequent['RIGHT']),
+        ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & angle_antecedent['CENTER'], direction_consequent['RIGHT']),
+
+        ctrl.Rule(drag_antecedent['LEFT_LARGE'] & altitude_antecedent['NEAR_ZERO'], throttle_consequent['UP_LARGE']),
+        ctrl.Rule(drag_antecedent['LEFT_LARGE'] & altitude_antecedent['SMALL'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['LEFT_LARGE'] & altitude_antecedent['MEDIUM'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['LEFT_LARGE'] & altitude_antecedent['LARGE'], throttle_consequent['UP_SMALL']),
+
+        ctrl.Rule(drag_antecedent['LEFT_SMALL'] & altitude_antecedent['NEAR_ZERO'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['LEFT_SMALL'] & altitude_antecedent['SMALL'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['LEFT_SMALL'] & altitude_antecedent['MEDIUM'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['LEFT_SMALL'] & altitude_antecedent['LARGE'], throttle_consequent['UP_SMALL']),
+
+        ctrl.Rule(drag_antecedent['ZERO'] & altitude_antecedent['NEAR_ZERO'], throttle_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['ZERO'] & altitude_antecedent['SMALL'], throttle_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['ZERO'] & altitude_antecedent['MEDIUM'], throttle_consequent['ZERO']),
+        ctrl.Rule(drag_antecedent['ZERO'] & altitude_antecedent['LARGE'], throttle_consequent['ZERO']),
+
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & altitude_antecedent['NEAR_ZERO'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & altitude_antecedent['SMALL'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & altitude_antecedent['MEDIUM'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & altitude_antecedent['LARGE'], throttle_consequent['UP_SMALL']),
+
+        ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & altitude_antecedent['NEAR_ZERO'], throttle_consequent['UP_LARGE']),
+        ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & altitude_antecedent['SMALL'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & altitude_antecedent['MEDIUM'], throttle_consequent['UP_SMALL']),
+        ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & altitude_antecedent['LARGE'], throttle_consequent['UP_SMALL'])
+
+        #ctrl.Rule(vertical_velocity['UP_SMALL'] & vertical_velocity['UP_LARGE'], throttle_consequent['DOWN_SMALL'])
+    ]
+    # direction
+
+    # throttle
+
     # endregion
 
     # region CONTROL_SYSTEMS
-    throttling_ctrl = ctrl.ControlSystem(
-        [rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9, rule10, rule11, rule12, rule13, rule14, rule15,
-         rule16, rule17, rule18, rule19, rule20, rule21])
-
-    angle_ctrl = ctrl.ControlSystem(
-        [rule22, rule23, rule24, rule25, rule26, rule27, rule28, rule29, rule30, rule31, rule32])
+    throttling_ctrl = ctrl.ControlSystem(throttle_control_system_rules)
+    angle_ctrl = ctrl.ControlSystem(angle_control_system_rules)
 
     throttling = ctrl.ControlSystemSimulation(throttling_ctrl)
     angling = ctrl.ControlSystemSimulation(angle_ctrl)
@@ -373,18 +429,18 @@ def fuzzy_logic_process():
 
             throttling.compute()
 
-            if angle_copy == 0 and drag_copy <= 30:
-                direction_out = 0
-                slow = 0
-            else:
-                angling.compute()
-                direction_out = angling.output['direction']
-                slow = angling.output['throttle']
+            #if abs(drag_copy) <= 5:
+            #    direction_out = 0
+            #    slow = 0
+            #else:
+            angling.compute()
+            direction_out = angling.output['direction']
+            slow = angling.output['throttle']
 
             throttle_out = throttling.output['throttle']
             update_fuzzy_outputs(throttle_out, direction_out, slow)
             if time.time() - delta_time >= 1:
-                print(f'{PROCESS_HEADER}Updating value from fuzzy logic, throttle={float(throttle_out)}, direction={float(direction_out)}, slow={float(slow)}')
+                print(f'{PROCESS_HEADER}Updating value from fuzzy logic, throttle={round(float(throttle_out), 2)}, direction={round(float(direction_out), 2)}, slow={round(float(slow), 2)}')
                 delta_time = time.time()
         except Exception as e:
             print(f'Exception while computing fuzzy logic, reason: {str(e)}')

@@ -35,12 +35,34 @@ Lander = function() {
 	this.thrustLevel=0; 
 	
 	var reset = this.reset = function () { 
-	
+		300/1350
 		abortCounter = -1; 
 		lastAbort = Date.now(); 
 		//vel.reset(0.415, 0); //- org
-		vel.reset(0.415, 0);
-		pos.reset(110,150); 
+		horizontal_velocity_max = 60
+		horizontal_velocity_min = -60
+		horizontal_velocity = (Math.random() * (horizontal_velocity_max - horizontal_velocity_min) + horizontal_velocity_min) / 100;
+		
+		while(horizontal_velocity < 0.15 && horizontal_velocity > -0.15){
+			horizontal_velocity = (Math.random() * (horizontal_velocity_max - horizontal_velocity_min) + horizontal_velocity_min) / 100;
+		}
+		horizontal_velocity = -0.5
+		
+		console.log('horizontal velocity' + horizontal_velocity)
+		vel.reset(horizontal_velocity, 0);
+		//vel.reset(0.6, 0);
+		//pos.reset(110,150); //- org
+		
+		
+		if(horizontal_velocity > 0.3 || horizontal_velocity < 0.3) {
+			pos.reset(((window.innerWidth - 300 + (500 * horizontal_velocity)) / 2), 150);
+		}
+		else {
+			pos.reset(((window.innerWidth - 300) / 2), 150);
+		}
+		
+		console.log(window.innerWidth)
+		console.log((window.innerWidth / 2))
 		//this.rotation = targetRotation = -90; //- org
 		scale = 1; 
 		thrustBuild = 0; 
