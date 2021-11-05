@@ -12,8 +12,7 @@ from enum import Enum
 from selenium.webdriver import Firefox
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
-
-from fuzzy_logic import *
+from skfuzzy_helper import *
 
 # region GLOBALS
 counter = None
@@ -136,6 +135,16 @@ def py_auto_gui_process():
         else:
             print(f'{PROCESS_HEADER}Throttle for={_throttle_time_in_seconds}')
             throttle(_throttle_time_in_seconds)
+
+        with altitude.get_lock():
+            if altitude.value <= 5:
+                print(f'{PROCESS_HEADER} - landed! Waiting 4 seconds to next game...')
+                with start_fuzzy_logic_computing.get_lock():
+                    start_fuzzy_logic_computing.value = 0
+                time.sleep(4)
+                with start_fuzzy_logic_computing.get_lock():
+                    start_fuzzy_logic_computing.value = 1
+
 # endregion
 
 
@@ -357,25 +366,28 @@ def fuzzy_logic_process():
                     print(f'{PROCESS_HEADER}Starting computing fuzzy logic...')
                     is_fuzzy_logic_currently_running = True
 
-        angle_copy, drag_copy = gather_data()
+        try:
+            angle_copy, drag_copy = gather_data()
 
-        # print(f'altitude={_altitude}, speed={speed}')
+            # print(f'altitude={_altitude}, speed={speed}')
 
-        throttling.compute()
+            throttling.compute()
 
-        if angle_copy == 0 and drag_copy <= 30:
-            direction_out = 0
-            slow = 0
-        else:
-            angling.compute()
-            direction_out = angling.output['direction']
-            slow = angling.output['throttle']
+            if angle_copy == 0 and drag_copy <= 30:
+                direction_out = 0
+                slow = 0
+            else:
+                angling.compute()
+                direction_out = angling.output['direction']
+                slow = angling.output['throttle']
 
-        throttle_out = throttling.output['throttle']
-        update_fuzzy_outputs(throttle_out, direction_out, slow)
-        if time.time() - delta_time >= 1:
-            print(f'{PROCESS_HEADER}Updating value from fuzzy logic, throttle={float(throttle_out)}, direction={float(direction_out)}, slow={float(slow)}')
-            delta_time = time.time()
+            throttle_out = throttling.output['throttle']
+            update_fuzzy_outputs(throttle_out, direction_out, slow)
+            if time.time() - delta_time >= 1:
+                print(f'{PROCESS_HEADER}Updating value from fuzzy logic, throttle={float(throttle_out)}, direction={float(direction_out)}, slow={float(slow)}')
+                delta_time = time.time()
+        except Exception as e:
+            print(f'Exception while computing fuzzy logic, reason: {str(e)}')
 
 # endregion
 
