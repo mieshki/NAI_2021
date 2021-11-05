@@ -18,7 +18,7 @@ Lander = function() {
 		counter = 0, 
 		abortCounter = -1;  
 	
-	this.rotation = 0; 
+	this.rotation = 60;
 	this.thrusting = 0;
 	this.altitude = 0;
 	this.active = true; 

@@ -1,9 +1,15 @@
 """
-Download firefox driver form https://github.com/mozilla/geckodriver/releases
-Full Install instruction on https://www.selenium.dev/documentation/getting_started/installing_browser_drivers/
+Moon Lander using fuzzy logic.
+
+Authors:
+Reiter, Aleksander <https://github.com/block439>
+Dziadowiec, Mieszko <https://github.com/mieshki>
+
+How to run:
+(optional): `pip install -r requirements.txt`
+`python main.py`
 """
 import multiprocessing
-import os
 import time
 import pyautogui
 import pathlib
@@ -30,6 +36,9 @@ start_fuzzy_logic_computing = None
 
 # region PY_AUTO_GUI PROCESS
 def py_auto_gui_process():
+    """
+    Function creates process responsible for steering our game. It uses pyautogui to scrap and walk through page.
+    """
     PROCESS_HEADER = '[PY_AUTO_GUI_PROCESS] '
 
     # region GLOBALS
@@ -71,7 +80,7 @@ def py_auto_gui_process():
 
     def changeDirection(step):
         """ changeDirection(power) This function handles rocket angle.
-        :param level: Integer from 1 to 3. It will correct the angle of rocket by pressing right key provided times.
+        :param step: Integer from 1 to 3. It will correct the angle of rocket by pressing right key provided times.
         :return:
         """
         sign = abs(step) == step
@@ -86,6 +95,15 @@ def py_auto_gui_process():
         pyautogui.keyUp(direction)
 
     def translate(value, leftMin, leftMax, rightMin, rightMax):
+        """
+        This function translates input values to specified range
+        :param value: input value which should be translated
+        :param leftMin: input min value
+        :param leftMax: input max value
+        :param rightMin: output min value
+        :param rightMax: output min value
+        :return: Value from range leftMin to leftMax according to input value
+        """
         # Figure out how 'wide' each range is
         leftSpan = leftMax - leftMin
         rightSpan = rightMax - rightMin
@@ -166,6 +184,9 @@ def get_info(driver):
 
 
 def data_collector_process():
+    """
+    Function creates process responsible for scraping our page.
+    """
     PROCESS_HEADER = '[DATA_COLLECTOR_PROCESS] '
 
     # region GLOBALS
@@ -183,8 +204,10 @@ def data_collector_process():
     global start_fuzzy_logic_computing
     # endregion
 
-    driver = Chrome()
-    # driver = Firefox()
+    try:
+        driver = Chrome()
+    except:
+        driver = Firefox()
 
     web_path = f'{pathlib.Path().resolve()}\moonlander-simple-v1\index.html'
 
@@ -209,6 +232,9 @@ def data_collector_process():
 # region FUZZY_LOGIC_PROCESS
 
 def fuzzy_logic_process():
+    """
+    Function creates process responsible for all calculations. This is the brain.
+    """
     PROCESS_HEADER = '[FUZZY_LOGIC_PROCESS] '
 
     # region GLOBALS
@@ -372,11 +398,8 @@ def fuzzy_logic_process():
         ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & altitude_antecedent['MEDIUM'], throttle_consequent['UP_SMALL']),
         ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & altitude_antecedent['LARGE'], throttle_consequent['UP_SMALL'])
 
-        #ctrl.Rule(vertical_velocity['UP_SMALL'] & vertical_velocity['UP_LARGE'], throttle_consequent['DOWN_SMALL'])
     ]
-    # direction
 
-    # throttle
 
     # endregion
 
@@ -389,6 +412,10 @@ def fuzzy_logic_process():
     # endregion
 
     def gather_data():
+        """
+        This function adds inputs to our fuzzy set.
+        :return: copy of angle value and drag value
+        """
         with altitude.get_lock():
             throttling.input['altitude'] = altitude.value
             throttling.input['velocity'] = vertical_velocity.value
@@ -400,11 +427,18 @@ def fuzzy_logic_process():
 
             return angle_copy, drag_copy
 
-    def update_fuzzy_outputs(_throttle_out, _direction_out, _slow):
+    def update_fuzzy_outputs(_throttle_out, _direction_out, _horizontal_throttling):
+        """
+        This function updates three main steering values.
+        :param _throttle_out: Throttle time
+        :param _direction_out: Change direction time
+        :param _horizontal_throttling: Horizontal corrections
+        :return:
+        """
         with fuzzy_output_throttle_out.get_lock():
             fuzzy_output_throttle_out.value = float(_throttle_out)
             fuzzy_output_direction_out.value = float(_direction_out)
-            fuzzy_output_slow.value = float(_slow)
+            fuzzy_output_slow.value = float(_horizontal_throttling)
 
     delta_time = time.time()
 
@@ -425,22 +459,15 @@ def fuzzy_logic_process():
         try:
             angle_copy, drag_copy = gather_data()
 
-            # print(f'altitude={_altitude}, speed={speed}')
-
             throttling.compute()
-
-            #if abs(drag_copy) <= 5:
-            #    direction_out = 0
-            #    slow = 0
-            #else:
             angling.compute()
             direction_out = angling.output['direction']
-            slow = angling.output['throttle']
+            horizontal_throttling = angling.output['throttle']
 
             throttle_out = throttling.output['throttle']
-            update_fuzzy_outputs(throttle_out, direction_out, slow)
+            update_fuzzy_outputs(throttle_out, direction_out, horizontal_throttling)
             if time.time() - delta_time >= 1:
-                print(f'{PROCESS_HEADER}Updating value from fuzzy logic, throttle={round(float(throttle_out), 2)}, direction={round(float(direction_out), 2)}, slow={round(float(slow), 2)}')
+                print(f'{PROCESS_HEADER}Updating value from fuzzy logic, throttle={round(float(throttle_out), 2)}, direction={round(float(direction_out), 2)}, horizontal_throttling={round(float(horizontal_throttling), 2)}')
                 delta_time = time.time()
         except Exception as e:
             print(f'Exception while computing fuzzy logic, reason: {str(e)}')
@@ -456,6 +483,10 @@ class Process(Enum):
 
 
 def init_new_process(process_type):
+    """
+    This function initializes all processes
+    :param process_type: Process type stored in enum
+    """
     print(f'New process: {process_type}')
 
     if process_type == Process.fuzzy_logic:
@@ -476,6 +507,19 @@ def init_new_process(process_type):
 
 
 def process_variables_initializer(_counter, _altitude, _horizontal_velocity, _vertical_velocity, _angle, _fuzzy_output_throttle_out, _fuzzy_output_direction_out, _fuzzy_output_slow, _start_fuzzy_logic_computing):
+    """
+    This function initializes all global variables. This is required to access global variables in multiprocessing
+    :param _counter:
+    :param _altitude: altitude value of our ship
+    :param _horizontal_velocity: horizontal velocity of our ship
+    :param _vertical_velocity: vertical velocity of our ship
+    :param _angle: ship angle
+    :param _fuzzy_output_throttle_out: value in seconds how long we need to throttle
+    :param _fuzzy_output_direction_out: value in seconds how long and in which direction should we rotate ship
+    :param _fuzzy_output_slow: value in seconds used to slow down horizontal speed
+    :param _start_fuzzy_logic_computing:
+    :return:
+    """
     # region GLOBALS
     global counter
 
@@ -525,26 +569,3 @@ if __name__ == '__main__':
                                 initargs=(counter, altitude, horizontal_velocity, vertical_velocity, angle,
                                           fuzzy_output_throttle_out, fuzzy_output_direction_out, fuzzy_output_slow, start_fuzzy_logic_computing))
     pool.map(init_new_process, [Process.fuzzy_logic, Process.data_collector, Process.py_auto_gui])
-
-"""
-        altitude_sqrt = math.sqrt(altitude)
-
-        # Some examples:
-        #    - 0.10 and 5 - crash
-        #    - 0.13 and 5 - 919 very hard landing
-        #    - 0.15 and 5 - 906
-        #    - 0.20 and 5 - 879
-        # the lower the more aggressive and fuel saving
-        AGGRESSIVENESS_LEVEL = 0.14
-        CUTOFF_THRESHOLD = 5
-
-        print(f'altitude_sqrt={altitude_sqrt}, velocity={vertical_velocity}')
-        if altitude < CUTOFF_THRESHOLD:
-            print('Landed')
-            play = False
-        elif altitude_sqrt < int(vertical_velocity * AGGRESSIVENESS_LEVEL) and vertical_velocity > CUTOFF_THRESHOLD:
-            print('throttle for 1s')
-            throttle(1)
-        else:
-            pass
-"""
