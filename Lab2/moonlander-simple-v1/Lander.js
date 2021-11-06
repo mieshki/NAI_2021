@@ -60,10 +60,18 @@ Lander = function() {
 		else {
 			pos.reset(((window.innerWidth - 300) / 2), 150);
 		}
+
+		angle_min = -90;
+		angle_max = 90;
+		angle = parseInt(Math.random() * (angle_max - angle_min) + angle_min);
+
+		while(parseInt(angle) % 15 !== 0){
+			angle = parseInt(Math.random() * (angle_max - angle_min) + angle_min);
+		}
 		
 		console.log(window.innerWidth)
 		console.log((window.innerWidth / 2))
-		//this.rotation = targetRotation = -90; //- org
+		this.rotation = targetRotation = angle; //- org
 		scale = 1; 
 		thrustBuild = 0; 
 		bouncing = 0; 
