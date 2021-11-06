@@ -64,7 +64,7 @@ def py_auto_gui_process():
         """
         file_name = 'starter2.png'
 
-        while pyautogui.locateOnScreen('starter.png', confidence=0.5) is None or pyautogui.locateOnScreen('starter2.png', confidence=0.5):
+        while pyautogui.locateOnScreen('starter.png', confidence=0.5) is None and pyautogui.locateOnScreen('starter2.png', confidence=0.5) is None:
             print(f'{PROCESS_HEADER}Waiting for starting screen...')
             time.sleep(2)
 
