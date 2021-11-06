@@ -35,7 +35,7 @@ Lander = function() {
 	this.thrustLevel=0; 
 	
 	var reset = this.reset = function () { 
-		300/1350
+		//300/1350
 		abortCounter = -1; 
 		lastAbort = Date.now(); 
 		//vel.reset(0.415, 0); //- org

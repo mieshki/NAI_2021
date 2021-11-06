@@ -62,14 +62,16 @@ def py_auto_gui_process():
             game_launch() It locates main point of the window and click mouse button to start game.
             To achieve that used image detection from pyautogui lib
         """
-        file_name = 'starter.png'
+        file_name = 'starter2.png'
 
-        while pyautogui.locateOnScreen(file_name, confidence=0.5) is None:
+        while pyautogui.locateOnScreen('starter.png', confidence=0.5) is None or pyautogui.locateOnScreen('starter2.png', confidence=0.5):
             print(f'{PROCESS_HEADER}Waiting for starting screen...')
             time.sleep(2)
 
         print(f'{PROCESS_HEADER}Starting game!')
-        game_location = pyautogui.locateOnScreen(file_name, confidence=0.5)
+        game_location = pyautogui.locateOnScreen('starter.png', confidence=0.5)
+        if game_location is None:
+            game_location = pyautogui.locateOnScreen('starter2.png', confidence=0.5)
 
         with start_fuzzy_logic_computing.get_lock():
             start_fuzzy_logic_computing.value = 1
@@ -369,7 +371,7 @@ def fuzzy_logic_process():
 
         ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & angle_antecedent['RIGHT'], direction_consequent['ZERO']),
         ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & angle_antecedent['LEFT'], direction_consequent['RIGHT']),
-        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & angle_antecedent['CENTER'], direction_consequent['LEFT']),
+        ctrl.Rule(drag_antecedent['RIGHT_SMALL'] & angle_antecedent['CENTER'], direction_consequent['RIGHT']),
 
         ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & angle_antecedent['RIGHT'], direction_consequent['ZERO']),
         ctrl.Rule(drag_antecedent['RIGHT_LARGE'] & angle_antecedent['LEFT'], direction_consequent['RIGHT']),
