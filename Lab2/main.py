@@ -62,12 +62,14 @@ def py_auto_gui_process():
             game_launch() It locates main point of the window and click mouse button to start game.
             To achieve that used image detection from pyautogui lib
         """
-        while pyautogui.locateOnScreen('starter.png', confidence=0.5) is None:
+        file_name = 'starter.png'
+
+        while pyautogui.locateOnScreen(file_name, confidence=0.5) is None:
             print(f'{PROCESS_HEADER}Waiting for starting screen...')
             time.sleep(2)
 
         print(f'{PROCESS_HEADER}Starting game!')
-        game_location = pyautogui.locateOnScreen('starter.png', confidence=0.5)
+        game_location = pyautogui.locateOnScreen(file_name, confidence=0.5)
 
         with start_fuzzy_logic_computing.get_lock():
             start_fuzzy_logic_computing.value = 1
@@ -139,7 +141,7 @@ def py_auto_gui_process():
             _direction = fuzzy_output_direction_out.value
 
         with altitude.get_lock():
-            if abs(horizontal_velocity.value) <= 20 and angle.value == 0:
+            if abs(horizontal_velocity.value) <= 25 and angle.value == 0:
                 _horizontal_throttle = 0
                 pass
             else:
@@ -152,7 +154,7 @@ def py_auto_gui_process():
 
         # print(output)
         # output <0, 100>
-        if throttle_copy < 5:
+        if throttle_copy < 3:
             pass
         else:
             print(f'{PROCESS_HEADER}Throttle for={round(_throttle_time_in_seconds, 3)} seconds')
@@ -276,9 +278,9 @@ def fuzzy_logic_process():
 
     """ Drag membership functions """
     drag_antecedent['LEFT_LARGE'] = trapmf(drag_antecedent.universe, [-100, -100, -66, -33])
-    drag_antecedent['LEFT_SMALL'] = trimf(drag_antecedent.universe, [-66, -25, 0])
-    drag_antecedent['ZERO'] = trimf(drag_antecedent.universe, [-25, 0, 25])
-    drag_antecedent['RIGHT_SMALL'] = trimf(drag_antecedent.universe, [0, 25, 66])
+    drag_antecedent['LEFT_SMALL'] = trimf(drag_antecedent.universe, [-66, -33, 0])
+    drag_antecedent['ZERO'] = trimf(drag_antecedent.universe, [-33, 0, 33])
+    drag_antecedent['RIGHT_SMALL'] = trimf(drag_antecedent.universe, [0, 33, 66])
     drag_antecedent['RIGHT_LARGE'] = trapmf(drag_antecedent.universe, [33, 66, 100, 100])
 
     """ Force membership functions """
