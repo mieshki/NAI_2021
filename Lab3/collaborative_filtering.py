@@ -1,3 +1,12 @@
+"""
+Movie recommendation
+Authors:
+Reiter, Aleksander <https://github.com/block439>
+Dziadowiec, Mieszko <https://github.com/mieshki>
+How to run:
+(optional): `pip install -r requirements.txt`
+`collaborative_filtering.py` --user <user_fullName>
+"""
 import argparse
 import json
 import numpy as np
@@ -6,6 +15,10 @@ from compute_scores import euclidean_score
 
 
 def build_arg_parser():
+    """
+    Function parses arguments from cmd
+    :return: parser object
+    """
     parser = argparse.ArgumentParser(description='Find users who are similar to the input user')
     parser.add_argument('--user', dest='user', required=True,
                         help='Input user')
@@ -14,6 +27,13 @@ def build_arg_parser():
 
 # Finds users in the dataset that are similar to the input user
 def find_similar_users(dataset, user, num_users):
+    """
+    Function returns list of similar users to input user. Similarity is based on movies rates.
+    :param dataset: Raw dataset with movies, rates and users
+    :param user: The user we are looking for a similarity to
+    :param num_users: How many similar users return
+    :return: List with similar users to input user
+    """
     if user not in dataset:
         raise TypeError('Cannot find ' + user + ' in the dataset')
 
@@ -32,6 +52,12 @@ def find_similar_users(dataset, user, num_users):
 
 
 def predict_movie_rate(similar_users, dataset):
+    """
+    Function predicts movie rate basing on similar users ratings.
+    :param similar_users: List with similar users
+    :param dataset: Raw dataset with movies, rates and users
+    :return: List of movies with predicted rate
+    """
     similar_ratings = {}
     prediction_movies = {}
 
@@ -57,11 +83,19 @@ def predict_movie_rate(similar_users, dataset):
     return prediction_movies
 
 
-def recommended_movie(_user, dataset, movies, number, sign):
+def recommended_movie(_user, dataset, movies, number, sign="can"):
+    """
+    Function prints recommended movies
+    :param _user: User to whom we recommend videos
+    :param dataset: Raw dataset with movies, rates and users
+    :param movies: Dataset with movies and predictions.
+    :param number: Int value how many recommendation print
+    :param sign: String value, it tells you whether to recommend or not.
+    """
     for movie in movies:
         if movie not in dataset[_user] and number > 0:
             number -= 1
-            print(f"Ten film może Ci się{sign} spodobać {movie}, nasza ocena: {movies[movie]}")
+            print(f"This movie {sign} intrest you {movie}, our rate: {movies[movie]}")
 
 
 if __name__ == '__main__':
@@ -86,6 +120,6 @@ if __name__ == '__main__':
     sorted_desc_movies = {k: v for k, v in sorted(unsorted_movies.items(), key=lambda item: item[1], reverse=True)}
     sorted_asc_movies = {k: v for k, v in sorted(unsorted_movies.items(), key=lambda item: item[1])}
 
-    recommended_movie(user, data, sorted_desc_movies, 5, "")
+    recommended_movie(user, data, sorted_desc_movies, 5)
     print('-' * 41)
-    recommended_movie(user, data, sorted_asc_movies, 5, " nie")
+    recommended_movie(user, data, sorted_asc_movies, 5, "can't")
