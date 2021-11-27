@@ -1,51 +1,43 @@
-import numpy as np
+"""
+Source - https://www.youtube.com/watch?v=p_rmpE0XwCc
+
+"""
+from sklearn.datasets import load_wine
 import matplotlib.pyplot as plt
-from sklearn import svm, datasets
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # import some data to play with
-    wine = datasets.load_wine()
-    iris = datasets.load_iris()
-    print(iris)
-    X = iris.data[:, :4]  # we only take the first two features. We could
-    print(iris.items())
-    # avoid this ugly slicing by using a two-dim dataset
-    y = iris.target
 
-    # we create an instance of SVM and fit out data. We do not scale our
-    # data since we want to plot the support vectors
-    svc = svm.SVC(kernel='rbf', C=1, gamma=100).fit(X, y)
+    wines = load_wine()
 
-    # create a mesh to plot in
-    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    h = (x_max / x_min) / 100
-    xx, yy, x2, y2 = np.meshgrid(np.arange(x_min, x_max, h),
-                         np.arange(y_min, y_max, h),
-                         x2,
-                         y2)
+    #print(wines['DESCR'])
 
-    plt.subplot(1, 1, 1)
-    Z = svc.predict(np.c_[xx.ravel(), yy.ravel(), x2, y2])
-    Z = Z.reshape(xx.shape)
-    plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
+    X, y = wines['data'], wines['target']
 
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Paired)
-    plt.xlabel('Sepal length')
-    plt.ylabel('Sepal width')
-    plt.xlim(xx.min(), xx.max())
-    plt.title('SVC with linear kernel')
-    plt.show()
+    #%matplotlib inline
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    plt.hist(y)
+
+    scaler = StandardScaler()
+
+    svm = SVC(C=1e-1, kernel='linear', degree=4)
+
+    X = scaler.fit(X).transform(X)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
+    y_pred = svm.fit(X_train, y_train).predict(X_test)
+
+    print(f""" {
+
+    classification_report(y_pred, y_test)}
+
+    Confusion matrix:
+    {confusion_matrix(y_pred, y_test)}
+
+    Number of support vectors per class: {svm.n_support_}
+
+    """)
