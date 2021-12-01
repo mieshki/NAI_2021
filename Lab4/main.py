@@ -1,24 +1,30 @@
 """
-Source - https://www.youtube.com/watch?v=p_rmpE0XwCc
+Prediction model based on SVM methods
 
+Authors:
+Reiter, Aleksander <https://github.com/block439>
+Dziadowiec, Mieszko <https://github.com/mieshki>
+How to run:
+(optional): `pip install -r requirements.txt`
 """
+
 from sklearn.datasets import load_wine
 import matplotlib.pyplot as plt
-from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from student_data import student_prediction
 
-if __name__ == '__main__':
-
+def wine_prediction():
+    """
+    This function predicts class of wine basing on provided
+    :return:
+    """
     wines = load_wine()
-
-    #print(wines['DESCR'])
+    print(wines['DESCR'])
 
     X, y = wines['data'], wines['target']
-
-    #%matplotlib inline
 
     plt.hist(y)
 
@@ -28,16 +34,24 @@ if __name__ == '__main__':
 
     X = scaler.fit(X).transform(X)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.8)
     y_pred = svm.fit(X_train, y_train).predict(X_test)
 
-    print(f""" {
+    print(f""" 
+        {
 
     classification_report(y_pred, y_test)}
 
-    Confusion matrix:
-    {confusion_matrix(y_pred, y_test)}
+        Confusion matrix:
+        {confusion_matrix(y_pred, y_test)}
 
-    Number of support vectors per class: {svm.n_support_}
+        Number of support vectors per class: {svm.n_support_}
 
-    """)
+        """)
+
+if __name__ == '__main__':
+    # function call to print wine class prediction
+    #wine_prediction()
+
+    # function call to print student grade prediction
+    student_prediction()
