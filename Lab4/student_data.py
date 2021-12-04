@@ -71,7 +71,7 @@ def student_prediction():
 
    scaler = StandardScaler()
    # Available kernels: { ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’, ‘precomputed’ }
-   svm = SVC(C=1e-1, kernel='linear', degree=8)
+   svm = SVC(C=1e-1, kernel='poly', degree=8)
 
    X = scaler.fit(x_data).transform(x_data)
 
