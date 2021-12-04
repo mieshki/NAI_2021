@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from mlxtend.plotting import plot_decision_regions
-from collections import Counter
+from yellowbrick.classifier import ClassificationReport
 """
     Dataset description:
         # Attributes for both student-mat.csv (Math course) and student-por.csv (Portuguese language course) datasets:
@@ -27,6 +27,8 @@ from collections import Counter
 
         15 G3 - final grade (numeric: from 0 to 5, output target)
 """
+
+
 
 def student_prediction():
    """
@@ -77,6 +79,15 @@ def student_prediction():
 
    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, shuffle=True)
    y_pred = svm.fit(X_train, y_train).predict(X_test)
+
+   classes = [0, 1, 2, 3, 4, 5]
+
+   model = GaussianNB()
+   visualizer = ClassificationReport(model, classes=classes, support=True)
+
+   visualizer.fit(X_train, y_train)  # Fit the visualizer and the model
+   visualizer.score(X_test, y_test)  # Evaluate the model on the test data
+   visualizer.show()  # Finalize and show the figure
 
    print(classification_report(y_pred, y_test))
    print('Confusion matrix:')
