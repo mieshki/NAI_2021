@@ -56,16 +56,18 @@ def student_prediction():
    plt.hist(y, density=10, bins=20)
    plt.xlabel('Ocena')
    plt.ylabel('Ilość')
+   plt.show()
 
    # ?
    fig = plt.figure(figsize=(10, 10))
    ax = plt.axes(projection="3d")
-   ax.scatter3D(df['studytime'], df['freetime'], df['G3'],
-                c=df['goout'], s=df['traveltime'] / 50, alpha=0.4)
+   ax.scatter3D(df['studytime'], df['traveltime'], df['G3'],
+                c=df['goout'], alpha=0.4)
    ax.set_xlabel("x")
    ax.set_ylabel("y")
    ax.set_zlabel("z")
-   ax.set_title("Relationship between height, weight, and length")
+   ax.set_title("Relationship between studytime, studytime, and G3")
+   plt.show()
 
    scaler = StandardScaler()
    # Available kernels: { ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’, ‘precomputed’ }
@@ -73,7 +75,7 @@ def student_prediction():
 
    X = scaler.fit(x_data).transform(x_data)
 
-   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, shuffle=True)
+   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, shuffle=True)
    y_pred = svm.fit(X_train, y_train).predict(X_test)
 
    print(classification_report(y_pred, y_test))
