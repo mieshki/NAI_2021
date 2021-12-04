@@ -1,6 +1,4 @@
-import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -31,13 +29,20 @@ from collections import Counter
 """
 
 def student_prediction():
+   """
+   This function predicts student final grade basing on provided dataset.
+   Here we used linear kernel function as it generates best predictions.
+   Predictions are printed in readable format
+   """
 
+   # reading data from csv file
    df = pd.read_csv("..\\Lab4\\student-por.csv", delimiter=";",  header=0)
    x_norm = ['address', 'Pstatus', 'Medu', 'Fedu', 'Mjob', 'Fjob', 'traveltime', 'studytime', 'failures', 'paid', 'internet', 'romantic', 'freetime', 'goout']
    x_data = df[x_norm]
+
+   # maping string values from data set to numbers
    label_dict = {'U': 0, 'R': 1, 'T': 0, 'A': 1, 'teacher': 0, 'health': 1, 'services': 2, 'at_home': 3, 'other': 4, 'no':0, 'yes':1}
    x_data = x_data.replace(label_dict)
-
    y = df['G3']
 
    # Mapping values from range 0..20 to 0..5
@@ -46,9 +51,6 @@ def student_prediction():
       y[i] = int(y[i]/3.5)
       #print(f'Mapped {old_value} -> {y[i]}')
    #print(dict(Counter(y)))
-
-   #count = dict(Counter(y))
-
 
    # Histogram
    plt.hist(y, density=10, bins=20)
@@ -67,7 +69,7 @@ def student_prediction():
 
    scaler = StandardScaler()
    # Available kernels: { ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’, ‘precomputed’ }
-   svm = SVC(C=1e-1, kernel='linear', degree=5)
+   svm = SVC(C=1e-1, kernel='linear', degree=8)
 
    X = scaler.fit(x_data).transform(x_data)
 

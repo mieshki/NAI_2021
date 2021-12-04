@@ -16,13 +16,15 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from student_data import student_prediction
 
+
 def wine_prediction():
     """
-    This function predicts class of wine basing on provided
-    :return:
+    This function predicts class of wine basing on provided dataset.
+    Here we used linear kernel function as it generates best predictions.
+    Predictions are printed in readable format
     """
     wines = load_wine()
-    print(wines['DESCR'])
+    # print(wines['DESCR'])
 
     X, y = wines['data'], wines['target']
 
@@ -32,26 +34,20 @@ def wine_prediction():
 
     svm = SVC(C=1e-1, kernel='linear', degree=4)
 
+    # Standardizing values
     X = scaler.fit(X).transform(X)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.8)
     y_pred = svm.fit(X_train, y_train).predict(X_test)
 
-    print(f""" 
-        {
-
-    classification_report(y_pred, y_test)}
-
-        Confusion matrix:
-        {confusion_matrix(y_pred, y_test)}
-
-        Number of support vectors per class: {svm.n_support_}
-
-        """)
+    print(classification_report(y_pred, y_test))
+    print('Confusion matrix:')
+    print(confusion_matrix(y_pred, y_test))
+    print(f'Number of support vectors per class: {svm.n_support_}')
 
 if __name__ == '__main__':
     # function call to print wine class prediction
-    #wine_prediction()
+    # wine_prediction()
 
     # function call to print student grade prediction
     student_prediction()
